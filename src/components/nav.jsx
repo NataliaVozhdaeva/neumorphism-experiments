@@ -5,6 +5,7 @@ const links = [
   { to: '/requests', label: 'Requests' },
   { to: '/help', label: 'Help' },
   { to: '/profile', label: 'Profile' },
+  { to: '/templates', label: 'Templates' },
 ];
 
 function Nav() {

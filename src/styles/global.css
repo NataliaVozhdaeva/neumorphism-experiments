@@ -2,11 +2,17 @@ html {
   background-color: var(--milk-white);
 }
 
+body {
+  margin: 0;
+  color: var(--gray);
+  font-size: 16px;
+}
+
 .contentContainer {
   display: flex;
   flex-direction: column;
-  max-width: 1200px;
-  height: 85vh;
+  /* max-width: 1200px; */
+  height: 100vh;
   box-sizing: border-box;
   margin: auto;
   padding: 30px;

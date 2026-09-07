@@ -1,4 +1,6 @@
 .btn {
+  align-self: flex-start;
+
   color: var(--gray);
   color: var(--gray);
 

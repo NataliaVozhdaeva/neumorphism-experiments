@@ -1,0 +1,9 @@
+.components {
+  display: flex;
+  gap: 16px;
+}
+
+.customClassName {
+  width: fit-content;
+  padding: 8px 16px;
+}
