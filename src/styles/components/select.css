@@ -1,5 +1,4 @@
 .select {
-  /* якорь для абсолютно спозиционированного списка */
   position: relative;
   align-self: flex-start;
 }
@@ -20,10 +19,8 @@
   flex-shrink: 0;
   width: 20px;
   height: 20px;
-  /* прижимаем стрелку к правому краю, как бы длинна ни была подпись */
   margin-left: auto;
 
-  /* цвет стрелки задаётся фоном, маска только вырезает форму */
   background-color: var(--gray);
   -webkit-mask: var(--icon-chevron-down) center / contain no-repeat;
   mask: var(--icon-chevron-down) center / contain no-repeat;
@@ -31,17 +28,16 @@
   transition: transform 0.2s;
 }
 
-/* разворачиваем стрелку, когда список открыт */
 .select--open .select-trigger::after {
   transform: rotate(180deg);
 }
 
 .select-list {
+  z-index: 10;
+
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  /* поверх соседних полей формы */
-  z-index: 10;
 
   display: flex;
   flex-direction: column;
@@ -68,7 +64,6 @@
   white-space: nowrap;
 }
 
-/* выбранная опция выглядит вдавленной на фоне выпуклых соседей */
 .select-option--selected,
 .select-option--selected:hover {
   box-shadow:
@@ -76,7 +71,6 @@
     var(--lightpoint) -8px -8px 16px inset;
 }
 
-/* кнопки не наследуют ни цвет, ни шрифт — возвращаем это руками */
 .select button {
   color: inherit;
   font: inherit;

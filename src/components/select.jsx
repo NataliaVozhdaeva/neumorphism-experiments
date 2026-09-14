@@ -3,10 +3,8 @@ import { useState } from 'react';
 import '../styles/components/select.css';
 
 function Select({ className = '', options = [], value, onChange, placeholder = 'Select an option' }) {
-  // открыт ли список; состояние внутреннее, родителю про него знать незачем
   const [isOpen, setIsOpen] = useState(false);
 
-  // объект выбранной опции или undefined, если ничего не выбрано
   const selected = options.find((option) => option.value === value);
 
   return (
