@@ -3,28 +3,30 @@ import { useState } from 'react';
 import Btn from '../components/button';
 import Input from '../components/input';
 import Modal from '../components/modal';
-
+import Select from '../components/select';
 import Nav from '../components/nav';
 import '../styles/home.css';
 
 function Home() {
-  // открыта ли модалка создания аккаунта
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [contact, setContact] = useState('');
 
-  // отправка формы: пока просто гасим перезагрузку страницы
   const handleCreateSubmit = (e) => {
     e.preventDefault();
   };
 
-  // вход в аккаунт: гасим перезагрузку и достаём значения полей
   const handleLoginSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email');
     const password = formData.get('password');
-    // тут будет запрос на бэк
     console.log({ email, password });
   };
+
+  const contactOptions = [
+    { value: 'email', label: 'e-mail' },
+    { value: 'phone', label: 'phone' },
+  ];
 
   return (
     <div className='homepage contentContainer'>
@@ -52,6 +54,15 @@ function Home() {
           <h2 className='modal-title'>Create an account</h2>
           <Input className='create-email' placeholder='email' />
           <Input className='create-password' type='password' placeholder='password' />
+          <Input className='repeat-password' type='password' placeholder='repeat password' />
+          <Select
+            className='select-contact'
+            options={contactOptions}
+            value={contact}
+            onChange={setContact}
+            placeholder='Preferred way to contact'
+          />
+
           <Btn text='Create' className='account-creation-submit' type='submit' />
         </form>
       </Modal>

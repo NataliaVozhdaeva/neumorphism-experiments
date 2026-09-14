@@ -1,0 +1,84 @@
+.select {
+  /* якорь для абсолютно спозиционированного списка */
+  position: relative;
+  align-self: flex-start;
+}
+
+.select-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  width: 100%;
+  padding: 8px 16px;
+  box-sizing: border-box;
+}
+
+.select-trigger::after {
+  content: '';
+
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  /* прижимаем стрелку к правому краю, как бы длинна ни была подпись */
+  margin-left: auto;
+
+  /* цвет стрелки задаётся фоном, маска только вырезает форму */
+  background-color: var(--gray);
+  -webkit-mask: var(--icon-chevron-down) center / contain no-repeat;
+  mask: var(--icon-chevron-down) center / contain no-repeat;
+
+  transition: transform 0.2s;
+}
+
+/* разворачиваем стрелку, когда список открыт */
+.select--open .select-trigger::after {
+  transform: rotate(180deg);
+}
+
+.select-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  /* поверх соседних полей формы */
+  z-index: 10;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  min-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+
+  background: linear-gradient(145deg, var(--beige1), var(--beige2));
+  border-radius: 20px;
+  box-shadow:
+    var(--beige-shadow) 8px 8px 24px,
+    #ffffff80 2px 2px 4px inset;
+}
+
+.select-option {
+  width: 100%;
+  padding: 8px 16px;
+  box-sizing: border-box;
+  text-align: left;
+  white-space: nowrap;
+}
+
+/* выбранная опция выглядит вдавленной на фоне выпуклых соседей */
+.select-option--selected,
+.select-option--selected:hover {
+  box-shadow:
+    var(--beige-shadow) 8px 8px 16px inset,
+    var(--lightpoint) -8px -8px 16px inset;
+}
+
+/* кнопки не наследуют ни цвет, ни шрифт — возвращаем это руками */
+.select button {
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
