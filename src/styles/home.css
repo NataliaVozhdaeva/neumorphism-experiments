@@ -46,3 +46,9 @@
   font-size: 12px;
   color: var(--gray);
 }
+
+.form-error {
+  width: 100%;
+  font-size: 12px;
+  color: var(--red);
+}

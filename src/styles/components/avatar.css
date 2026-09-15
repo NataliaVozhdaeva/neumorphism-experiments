@@ -1,0 +1,14 @@
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  border-radius: 50%;
+  font-weight: bold;
+  color: var(--green-text);
+  background: linear-gradient(145deg, var(--green1), var(--green2));
+  box-shadow:
+    var(--green-shadow) 4px 4px 8px,
+    var(--lightpoint) -4px -4px 8px;
+}

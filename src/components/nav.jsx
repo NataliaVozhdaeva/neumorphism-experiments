@@ -1,5 +1,8 @@
 import { NavLink } from 'react-router';
 
+import { useAuth } from '../context/authContext';
+import Avatar from './avatar';
+
 const links = [
   { to: '/', label: 'Home' },
   { to: '/requests', label: 'Requests' },
@@ -9,11 +12,14 @@ const links = [
 ];
 
 function Nav() {
+  const { user } = useAuth();
+
   return (
     <nav className='pages-navigation'>
       {links.map(({ to, label }) => (
         <NavLink key={to} to={to} className={({ isActive }) => (isActive ? 'btn navlink navlink--active' : 'btn navlink')}>
-          {label}
+          {to === '/profile' && user && <Avatar email={user.email} size={20} />}
+          <span>{label}</span>
         </NavLink>
       ))}
     </nav>
