@@ -23,7 +23,8 @@ body {
     #ffffff80 2px 2px 4px inset;
 }
 
-.title {
+.title,
+.icon {
   color: var(--gray);
   font-family: Georgia, 'Times New Roman', Times, serif;
   text-shadow:

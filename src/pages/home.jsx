@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { useAuth } from '../context/authContext';
 import Btn from '../components/button';
@@ -14,6 +14,8 @@ function Home() {
   const [contact, setContact] = useState('');
   const [createError, setCreateError] = useState('');
   const [loginError, setLoginError] = useState('');
+  const emailInput = useRef(null);
+  const passwordInput = useRef(null);
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
@@ -45,6 +47,8 @@ function Home() {
         email: formData.get('email'),
         password: formData.get('password'),
       });
+      emailInput.current.value = '';
+      passwordInput.current.value = '';
     } catch (err) {
       setLoginError(err.message);
     }
@@ -64,14 +68,14 @@ function Home() {
         <form className='login-container' onSubmit={handleLoginSubmit}>
           <label className='login-label'>
             <span>Email</span>
-            <Input className='login' type='email' name='email' placeholder='email' id='login-email' required />
+            <Input className='login' type='email' name='email' placeholder='email' id='login-email' ref={emailInput} required />
           </label>
           <label className='login-label'>
             <span>Password</span>
-            <Input className='password' type='password' name='password' placeholder='password' id='login-password' required />
+            <Input className='password' type='password' name='password' placeholder='password' id='login-password' ref={passwordInput} required />
           </label>
           {loginError && <p className='form-error'>{loginError}</p>}
-          <Btn text='Login into your account' className='accountBtn accountBtn-login' type='submit' />
+          <Btn text='Login into your account' className='accountBtn accountBtn-login btn-green' type='submit' />
         </form>
         <span>or</span>
         <Btn text='Create an account' className='accountBtn accountBtn-create' onClick={() => setIsCreateOpen(true)} />
@@ -86,7 +90,7 @@ function Home() {
           <Select className='select-contact' options={contactOptions} value={contact} onChange={setContact} placeholder='Preferred way to contact' />
 
           {createError && <p className='form-error'>{createError}</p>}
-          <Btn text='Create' className='account-creation-submit' type='submit' />
+          <Btn text='Create' className='account-creation-submit btn-green' type='submit' />
         </form>
       </Modal>
     </div>

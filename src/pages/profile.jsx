@@ -13,7 +13,15 @@ const contactLabels = {
 };
 
 function Profile() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -49,26 +57,33 @@ function Profile() {
               <dd>{new Date(user.createdAt).toLocaleDateString()}</dd>
             </div>
           </dl>
+          <Btn text='Log Out' className='accountBtn accountBtn-logout' onClick={logout} />
         </div>
 
-        <div className='profile-card additional'>
-          <div>
-            <span className='info-icon icon'></span>
-            <span></span>You can fill it to be able to share anytame with your partners
+        <div className='profile-card additional-info'>
+          <div className='profile-hint'>
+            <span className='info-icon icon btn'>
+              <i>i</i>
+            </span>
+            <span className='hint-text'>You can fill it to be able to share anytame with your partners</span>
           </div>
           <form>
-            <label>
+            <label className='profile-label'>
               <span>First name</span>
-              <Input className='first-name' type='text' name='first-name' placeholder='first name' required />
+              <Input className='first-name profile-input' type='text' name='first-name' placeholder='first name' required />
             </label>
-            <label>
+            <label className='profile-label'>
               <span>Last name</span>
-              <Input className='last-name' type='text' name='last-name' placeholder='last name' required />
+              <Input className='last-name profile-input' type='text' name='last-name' placeholder='last name' required />
             </label>
 
             <div className='occupation'>
               <Btn text='+' className='addBtn' onClick={() => console.log('click add')} />
             </div>
+
+            <button type='submit' className='btn btn-green additional_info-btn'>
+              Submit
+            </button>
           </form>
         </div>
       </div>
