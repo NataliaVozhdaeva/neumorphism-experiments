@@ -28,7 +28,24 @@ function toPublicUser(user) {
   return publicUser;
 }
 
-async function register({ email, password, repeatPassword, contact }) {
+async function register({
+  email,
+  password,
+  repeatPassword,
+  contact,
+  phone,
+  firstName,
+  lastName,
+  role,
+  activities,
+  locations,
+  priceFrom,
+  priceTo,
+  location,
+  serviceDescription,
+  budgetFrom,
+  budgetTo,
+}) {
   await delay();
 
   if (!email || !password) {
@@ -36,6 +53,12 @@ async function register({ email, password, repeatPassword, contact }) {
   }
   if (password !== repeatPassword) {
     throw new ApiError('Passwords do not match', { status: 422, field: 'repeatPassword' });
+  }
+  if (role !== 'customer' && role !== 'provider') {
+    throw new ApiError('Role must be either "customer" or "provider"', { status: 422, field: 'role' });
+  }
+  if (contact === 'phone' && !phone) {
+    throw new ApiError('Phone number is required', { status: 422, field: 'phone' });
   }
 
   const users = readUsers();
@@ -48,6 +71,14 @@ async function register({ email, password, repeatPassword, contact }) {
     email,
     password,
     contact: contact ?? null,
+    // Номер хранится только когда contact === 'phone'
+    ...(contact === 'phone' && { phone }),
+    firstName,
+    lastName,
+    role,
+    // Заполняется в зависимости от роли — набор полей у provider и customer разный
+    ...(role === 'provider' && { activities, locations, priceFrom, priceTo }),
+    ...(role === 'customer' && { location, serviceDescription, budgetFrom, budgetTo }),
     createdAt: new Date().toISOString(),
   };
 
@@ -74,6 +105,72 @@ async function login({ email, password }) {
   return toPublicUser(user);
 }
 
+async function updateProfile(updates) {
+  await delay();
+
+  const sessionId = localStorage.getItem(SESSION_KEY);
+  if (!sessionId) {
+    throw new ApiError('Not authenticated', { status: 401 });
+  }
+
+  const users = readUsers();
+  const index = users.findIndex((candidate) => candidate.id === sessionId);
+  if (index === -1) {
+    throw new ApiError('Not authenticated', { status: 401 });
+  }
+
+  // email и пароль через этот эндпоинт не меняются — даже если их случайно передадут
+  const {
+    email,
+    password,
+    repeatPassword,
+    contact,
+    phone,
+    role,
+    activities,
+    locations,
+    priceFrom,
+    priceTo,
+    location,
+    serviceDescription,
+    budgetFrom,
+    budgetTo,
+    ...rest
+  } = updates;
+
+  if (role !== 'customer' && role !== 'provider') {
+    throw new ApiError('Role must be either "customer" or "provider"', { status: 422, field: 'role' });
+  }
+  if (contact === 'phone' && !phone) {
+    throw new ApiError('Phone number is required', { status: 422, field: 'phone' });
+  }
+
+  const updatedUser = {
+    ...users[index],
+    ...rest,
+    contact: contact ?? null,
+    phone: undefined,
+    ...(contact === 'phone' && { phone }),
+    role,
+    // Поля предыдущей роли сбрасываются, чтобы при смене роли не оставалось чужих данных
+    activities: undefined,
+    locations: undefined,
+    priceFrom: undefined,
+    priceTo: undefined,
+    location: undefined,
+    serviceDescription: undefined,
+    budgetFrom: undefined,
+    budgetTo: undefined,
+    ...(role === 'provider' && { activities, locations, priceFrom, priceTo }),
+    ...(role === 'customer' && { location, serviceDescription, budgetFrom, budgetTo }),
+  };
+
+  users[index] = updatedUser;
+  writeUsers(users);
+
+  return toPublicUser(updatedUser);
+}
+
 async function logout() {
   await delay(100);
   localStorage.removeItem(SESSION_KEY);
@@ -89,4 +186,4 @@ async function getCurrentUser() {
   return user ? toPublicUser(user) : null;
 }
 
-export const mockAuthApi = { register, login, logout, getCurrentUser };
+export const mockAuthApi = { register, login, logout, getCurrentUser, updateProfile };

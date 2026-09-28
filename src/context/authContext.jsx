@@ -4,8 +4,6 @@ import { authApi } from '../api/authApi';
 
 const AuthContext = createContext(null);
 
-// Хранит текущего пользователя в памяти приложения. register()/login() сами обновляют
-// user, поэтому создание аккаунта сразу логинит пользователя без отдельного запроса
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +32,13 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  return <AuthContext.Provider value={{ user, isLoading, register, login, logout }}>{children}</AuthContext.Provider>;
+  const updateProfile = async (updates) => {
+    const updatedUser = await authApi.updateProfile(updates);
+    setUser(updatedUser);
+    return updatedUser;
+  };
+
+  return <AuthContext.Provider value={{ user, isLoading, register, login, logout, updateProfile }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

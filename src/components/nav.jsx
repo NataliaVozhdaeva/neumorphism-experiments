@@ -13,10 +13,11 @@ const links = [
 
 function Nav() {
   const { user } = useAuth();
+  const visibleLinks = links.filter(({ to }) => to !== '/profile' || user);
 
   return (
     <nav className='pages-navigation'>
-      {links.map(({ to, label }) => (
+      {visibleLinks.map(({ to, label }) => (
         <NavLink key={to} to={to} className={({ isActive }) => (isActive ? 'btn navlink navlink--active' : 'btn navlink')}>
           {to === '/profile' && user && <Avatar email={user.email} size={20} />}
           <span>{label}</span>

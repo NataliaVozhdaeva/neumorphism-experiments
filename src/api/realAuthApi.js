@@ -28,8 +28,44 @@ async function request(path, options) {
   return data;
 }
 
-async function register({ email, password, repeatPassword, contact }) {
-  return request('/auth/register', { body: JSON.stringify({ email, password, repeatPassword, contact }) });
+async function register({
+  email,
+  password,
+  repeatPassword,
+  contact,
+  phone,
+  firstName,
+  lastName,
+  role,
+  activities,
+  locations,
+  priceFrom,
+  priceTo,
+  location,
+  serviceDescription,
+  budgetFrom,
+  budgetTo,
+}) {
+  return request('/auth/register', {
+    body: JSON.stringify({
+      email,
+      password,
+      repeatPassword,
+      contact,
+      phone,
+      firstName,
+      lastName,
+      role,
+      activities,
+      locations,
+      priceFrom,
+      priceTo,
+      location,
+      serviceDescription,
+      budgetFrom,
+      budgetTo,
+    }),
+  });
 }
 
 async function login({ email, password }) {
@@ -44,4 +80,8 @@ async function getCurrentUser() {
   return request('/auth/me', { method: 'GET' });
 }
 
-export const realAuthApi = { register, login, logout, getCurrentUser };
+async function updateProfile(updates) {
+  return request('/auth/profile', { method: 'PATCH', body: JSON.stringify(updates) });
+}
+
+export const realAuthApi = { register, login, logout, getCurrentUser, updateProfile };

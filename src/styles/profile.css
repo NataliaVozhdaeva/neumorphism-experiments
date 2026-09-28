@@ -68,13 +68,44 @@
 
 .additional-info {
   position: relative;
-  min-width: 50%;
-}
 
-.additional-info form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  align-items: stretch;
+  gap: 24px;
+
+  width: calc(100% - 65px);
+}
+
+.additional-info .profile-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 32px;
+}
+
+.additional-info-fields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 24px;
+}
+
+.additional-info-fields .select {
+  justify-self: start;
+}
+
+.field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  font-size: 12px;
+  color: var(--gray);
+}
+
+.field-label--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
 }
 
 .icon.btn {
@@ -86,15 +117,45 @@
   height: 100%;
 }
 
-.accountBtn-logout {
-  margin-left: 100px;
+.profile-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 
+  margin-left: auto;
+}
+
+.accountBtn {
+  min-height: 36px;
+  box-sizing: border-box;
+}
+
+.accountBtn-logout {
+  align-self: flex-start;
+  margin-left: 100px;
   font-size: 12px;
+}
+
+.accountBtn-edit,
+.accountBtn-cancel {
+  font-size: 12px;
+}
+
+.activities {
+  min-width: 50%;
+  width: fit-content;
+}
+
+.edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  margin: auto;
 }
 
 .additional_info-btn {
   min-width: 200px;
-  margin: auto;
   padding: 8px 12px;
   font-size: 16px;
 }

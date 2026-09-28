@@ -51,6 +51,25 @@
   margin: 0 0 16px;
 }
 
+.role-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.price-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  color: var(--gray);
+}
+
+.price-range .price-input {
+  flex: 1;
+  min-width: 0;
+}
+
 .account-creation-submit {
   width: 100%;
   padding: 8px 12px;
