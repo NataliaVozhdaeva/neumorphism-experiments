@@ -6,7 +6,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 // Если авторизация будет через Laravel Sanctum (SPA, по кукам), перед login/register
 // нужно будет сначала сходить за CSRF-кукой: GET `${BASE_URL}/sanctum/csrf-cookie`
-async function request(path, options) {
+export async function request(path, options) {
   const response = await fetch(`${BASE_URL}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -41,10 +41,6 @@ async function register({
   locations,
   priceFrom,
   priceTo,
-  location,
-  serviceDescription,
-  budgetFrom,
-  budgetTo,
 }) {
   return request('/auth/register', {
     body: JSON.stringify({
@@ -60,10 +56,6 @@ async function register({
       locations,
       priceFrom,
       priceTo,
-      location,
-      serviceDescription,
-      budgetFrom,
-      budgetTo,
     }),
   });
 }

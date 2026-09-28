@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import { useAuth } from '../context/authContext';
 import Btn from '../components/button';
 import Input from '../components/input';
+import PasswordInput from '../components/passwordInput';
 import Modal from '../components/modal';
 import Select from '../components/select';
 import Textarea from '../components/textarea';
@@ -70,32 +71,6 @@ function Home() {
       }
 
       roleData = { activities, locations, priceFrom, priceTo };
-    }
-
-    if (role === 'customer') {
-      const location = (formData.get('location') ?? '').trim();
-      const serviceDescription = (formData.get('serviceDescription') ?? '').trim();
-      const budgetFrom = Number(formData.get('budgetFrom'));
-      const budgetTo = Number(formData.get('budgetTo'));
-
-      if (!location) {
-        setCreateError('Specify the location where you need the service');
-        return;
-      }
-      if (!serviceDescription) {
-        setCreateError('Describe the service you need');
-        return;
-      }
-      if (!formData.get('budgetFrom') || !formData.get('budgetTo')) {
-        setCreateError('Specify your budget range');
-        return;
-      }
-      if (budgetFrom > budgetTo) {
-        setCreateError('Minimum budget cannot be greater than maximum budget');
-        return;
-      }
-
-      roleData = { location, serviceDescription, budgetFrom, budgetTo };
     }
 
     try {
@@ -175,8 +150,8 @@ function Home() {
               <Input className='first-name' type='text' name='firstName' placeholder='first name' required />
               <Input className='last-name' type='text' name='lastName' placeholder='last name' required />
               <Input className='create-email' type='email' name='email' placeholder='email' required />
-              <Input className='create-password' type='password' name='password' placeholder='password' required />
-              <Input className='repeat-password' type='password' name='repeatPassword' placeholder='repeat password' required />
+              <PasswordInput className='create-password' name='password' placeholder='password' required />
+              <PasswordInput className='repeat-password' name='repeatPassword' placeholder='repeat password' required />
               <Select className='select-contact' options={contactOptions} value={contact} onChange={setContact} placeholder='Preferred way to contact' />
               {contact === 'phone' && <Input className='phone' type='tel' name='phone' placeholder='Phone number' required />}
               <Select className='select-role' options={roleOptions} value={role} onChange={setRole} placeholder='I am a...' />
@@ -194,18 +169,6 @@ function Home() {
                     <Input className='price-input price-from' type='number' name='priceFrom' placeholder='Price from' min='0' required />
                     <span>—</span>
                     <Input className='price-input price-to' type='number' name='priceTo' placeholder='Price to' min='0' required />
-                  </div>
-                </div>
-              )}
-
-              {role === 'customer' && (
-                <div className='role-fields'>
-                  <Input className='location' type='text' name='location' placeholder='Location where you need the service' required />
-                  <Textarea className='service-description' name='serviceDescription' placeholder='Describe the service you need' required />
-                  <div className='price-range'>
-                    <Input className='price-input budget-from' type='number' name='budgetFrom' placeholder='Budget from' min='0' required />
-                    <span>—</span>
-                    <Input className='price-input budget-to' type='number' name='budgetTo' placeholder='Budget to' min='0' required />
                   </div>
                 </div>
               )}

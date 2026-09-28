@@ -41,10 +41,6 @@ function buildEditForm(user) {
     locations: user.locations?.join(', ') ?? '',
     priceFrom: user.priceFrom ?? '',
     priceTo: user.priceTo ?? '',
-    location: user.location ?? '',
-    serviceDescription: user.serviceDescription ?? '',
-    budgetFrom: user.budgetFrom ?? '',
-    budgetTo: user.budgetTo ?? '',
   };
 }
 
@@ -128,32 +124,6 @@ function Profile() {
       roleData = { activities, locations, priceFrom, priceTo };
     }
 
-    if (editForm.role === 'customer') {
-      const location = editForm.location.trim();
-      const serviceDescription = editForm.serviceDescription.trim();
-      const budgetFrom = Number(editForm.budgetFrom);
-      const budgetTo = Number(editForm.budgetTo);
-
-      if (!location) {
-        setEditError('Specify the location where you need the service');
-        return;
-      }
-      if (!serviceDescription) {
-        setEditError('Describe the service you need');
-        return;
-      }
-      if (!editForm.budgetFrom || !editForm.budgetTo) {
-        setEditError('Specify your budget range');
-        return;
-      }
-      if (budgetFrom > budgetTo) {
-        setEditError('Minimum budget cannot be greater than maximum budget');
-        return;
-      }
-
-      roleData = { location, serviceDescription, budgetFrom, budgetTo };
-    }
-
     try {
       await updateProfile({
         contact: editForm.contact || null,
@@ -204,12 +174,15 @@ function Profile() {
           </div>
 
           <div className='profile-card additional-info'>
-            <div className='profile-hint'>
-              <span className='info-icon icon btn'>
-                <i>i</i>
-              </span>
-              <span className='hint-text'>You can fill it to be able to share anytame with your partners</span>
-            </div>
+            {/* Подсказка нужна только провайдерам — в режиме редактирования смотрим на выбранную в форме роль */}
+            {editForm.role === 'provider' && (
+              <div className='profile-hint'>
+                <span className='info-icon icon btn'>
+                  <i>i</i>
+                </span>
+                <span className='hint-text'>You can fill it to be able to share anytime with your partners</span>
+              </div>
+            )}
 
             <div className='additional-info-fields'>
               <label className='field-label field-label--inline'>
@@ -320,56 +293,6 @@ function Profile() {
               </div>
             )}
 
-            {editForm.role === 'customer' && (
-              <div className='role-fields'>
-                <label className='field-label'>
-                  <span>Location</span>
-                  <Input
-                    className='location'
-                    type='text'
-                    placeholder='Location where you need the service'
-                    value={editForm.location}
-                    onChange={(e) => updateField('location', e.target.value)}
-                    required
-                  />
-                </label>
-                <label className='field-label'>
-                  <span>Service description</span>
-                  <Textarea
-                    className='service-description'
-                    placeholder='Describe the service you need'
-                    value={editForm.serviceDescription}
-                    onChange={(e) => updateField('serviceDescription', e.target.value)}
-                    required
-                  />
-                </label>
-                <label className='field-label'>
-                  <span>Budget range</span>
-                  <div className='price-range'>
-                    <Input
-                      className='price-input'
-                      type='number'
-                      min='0'
-                      placeholder='from'
-                      value={editForm.budgetFrom}
-                      onChange={(e) => updateField('budgetFrom', e.target.value)}
-                      required
-                    />
-                    <span>—</span>
-                    <Input
-                      className='price-input'
-                      type='number'
-                      min='0'
-                      placeholder='to'
-                      value={editForm.budgetTo}
-                      onChange={(e) => updateField('budgetTo', e.target.value)}
-                      required
-                    />
-                  </div>
-                </label>
-              </div>
-            )}
-
             {editError && <p className='form-error'>{editError}</p>}
             <div className='edit-actions'>
               <Btn text='Cancel' type='button' className='accountBtn accountBtn-cancel' onClick={cancelEditing} />
@@ -399,12 +322,15 @@ function Profile() {
           <div className='profile-card additional-info'>
             <Btn text='Edit' className='accountBtn accountBtn-edit btn-green' onClick={startEditing} />
 
-            <div className='profile-hint'>
-              <span className='info-icon icon btn'>
-                <i>i</i>
-              </span>
-              <span className='hint-text'>You can fill it to be able to share anytame with your partners</span>
-            </div>
+            {/* Подсказка нужна только провайдерам */}
+            {user.role === 'provider' && (
+              <div className='profile-hint'>
+                <span className='info-icon icon btn'>
+                  <i>i</i>
+                </span>
+                <span className='hint-text'>You can fill it to be able to share anytime with your partners</span>
+              </div>
+            )}
 
             <dl className='profile-details'>
               <div className='profile-row'>
@@ -442,22 +368,6 @@ function Profile() {
                   <div className='profile-row'>
                     <dt>Price range</dt>
                     <dd>{user.priceFrom != null && user.priceTo != null ? `${user.priceFrom} – ${user.priceTo}` : 'Not set'}</dd>
-                  </div>
-                </>
-              )}
-              {user.role === 'customer' && (
-                <>
-                  <div className='profile-row'>
-                    <dt>Location</dt>
-                    <dd>{user.location || 'Not set'}</dd>
-                  </div>
-                  <div className='profile-row'>
-                    <dt>Service description</dt>
-                    <dd>{user.serviceDescription || 'Not set'}</dd>
-                  </div>
-                  <div className='profile-row'>
-                    <dt>Budget range</dt>
-                    <dd>{user.budgetFrom != null && user.budgetTo != null ? `${user.budgetFrom} – ${user.budgetTo}` : 'Not set'}</dd>
                   </div>
                 </>
               )}

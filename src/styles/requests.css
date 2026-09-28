@@ -1,0 +1,102 @@
+.request-form,
+.request-card {
+  background: linear-gradient(145deg, var(--beige1), var(--beige2));
+  border-radius: 20px;
+  box-shadow:
+    var(--beige-shadow) 8px 8px 16px,
+    var(--lightpoint) -8px -8px 16px;
+}
+
+.request-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  max-width: 500px;
+  padding: 24px 32px;
+}
+
+.request-form .input,
+.request-form .textarea {
+  align-self: stretch;
+}
+
+.request-form-title {
+  margin: 0;
+  font-size: 20px;
+  color: var(--green-text);
+}
+
+/* Два поля бюджета в одну строку */
+.request-budget {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  color: var(--gray);
+}
+
+.request-budget .budget-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.request-submit {
+  width: 100%;
+  padding: 8px 12px;
+}
+
+.request-history {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  margin-top: 40px;
+}
+
+.request-empty {
+  color: var(--gray);
+}
+
+.request-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  max-width: 500px;
+  padding: 0;
+  margin: 0;
+
+  list-style: none;
+}
+
+.request-card {
+  padding: 16px 24px;
+}
+
+.request-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.request-row {
+  display: flex;
+  gap: 8px;
+}
+
+.request-row dt {
+  min-width: 140px;
+
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--gray);
+}
+
+.request-row dd {
+  margin: 0;
+  line-height: 20px;
+  color: var(--green-text);
+  font-weight: bold;
+}

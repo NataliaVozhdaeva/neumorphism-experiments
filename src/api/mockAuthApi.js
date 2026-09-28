@@ -41,10 +41,6 @@ async function register({
   locations,
   priceFrom,
   priceTo,
-  location,
-  serviceDescription,
-  budgetFrom,
-  budgetTo,
 }) {
   await delay();
 
@@ -76,9 +72,8 @@ async function register({
     firstName,
     lastName,
     role,
-    // Заполняется в зависимости от роли — набор полей у provider и customer разный
+    // Поля, специфичные для provider — у customer своих полей в профиле нет
     ...(role === 'provider' && { activities, locations, priceFrom, priceTo }),
-    ...(role === 'customer' && { location, serviceDescription, budgetFrom, budgetTo }),
     createdAt: new Date().toISOString(),
   };
 
@@ -131,10 +126,6 @@ async function updateProfile(updates) {
     locations,
     priceFrom,
     priceTo,
-    location,
-    serviceDescription,
-    budgetFrom,
-    budgetTo,
     ...rest
   } = updates;
 
@@ -157,12 +148,7 @@ async function updateProfile(updates) {
     locations: undefined,
     priceFrom: undefined,
     priceTo: undefined,
-    location: undefined,
-    serviceDescription: undefined,
-    budgetFrom: undefined,
-    budgetTo: undefined,
     ...(role === 'provider' && { activities, locations, priceFrom, priceTo }),
-    ...(role === 'customer' && { location, serviceDescription, budgetFrom, budgetTo }),
   };
 
   users[index] = updatedUser;
