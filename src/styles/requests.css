@@ -60,10 +60,8 @@
 
 .request-list {
   display: flex;
-  flex-direction: column;
   gap: 16px;
 
-  max-width: 500px;
   padding: 0;
   margin: 0;
 
@@ -71,7 +69,23 @@
 }
 
 .request-card {
+  position: relative;
+  max-width: calc((100% - 20px) / 2);
   padding: 16px 24px;
+}
+
+.request-delete {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+
+  padding: 4px 12px;
+
+  font-size: 12px;
+}
+
+.request-delete:hover {
+  color: var(--red);
 }
 
 .request-details {
@@ -111,4 +125,37 @@
   flex-shrink: 0;
   font-size: 12px;
   color: var(--blue);
+}
+
+/* Расписание: две даты в строку и "Every [N] [unit]" */
+.request-dates,
+.request-interval {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  color: var(--gray);
+}
+
+.request-date-label {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+
+  font-size: 12px;
+}
+
+.request-date-label .request-date {
+  align-self: stretch;
+  font-family: inherit;
+}
+
+.request-interval .request-interval-input {
+  width: 80px;
+  align-self: center;
+}
+
+.request-interval .select {
+  align-self: center;
 }

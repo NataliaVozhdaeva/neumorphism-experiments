@@ -80,4 +80,12 @@ async function updateCurrency(currency) {
   return request('/auth/profile', { method: 'PATCH', body: JSON.stringify({ currency }) });
 }
 
-export const realAuthApi = { register, login, logout, getCurrentUser, updateProfile, updateCurrency };
+async function updateServices(services) {
+  return request('/auth/services', { method: 'PUT', body: JSON.stringify({ services }) });
+}
+
+async function getPublicProfile(id) {
+  return request(`/users/${encodeURIComponent(id)}`, { method: 'GET' });
+}
+
+export const realAuthApi = { register, login, logout, getCurrentUser, updateProfile, updateCurrency, updateServices, getPublicProfile };

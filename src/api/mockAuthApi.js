@@ -126,7 +126,6 @@ async function updateProfile(updates) {
     locations,
     priceFrom,
     priceTo,
-    services,
     ...rest
   } = updates;
 
@@ -149,8 +148,9 @@ async function updateProfile(updates) {
     locations: undefined,
     priceFrom: undefined,
     priceTo: undefined,
-    services: undefined,
-    ...(role === 'provider' && { activities, locations, priceFrom, priceTo, services: services ?? [] }),
+    ...(role === 'provider' && { activities, locations, priceFrom, priceTo }),
+    // Услуги редактируются отдельным методом; при уходе из провайдеров — сбрасываем
+    ...(role !== 'provider' && { services: undefined }),
   };
 
   users[index] = updatedUser;
@@ -176,6 +176,63 @@ async function updateCurrency(currency) {
   return toPublicUser(users[index]);
 }
 
+// Услуги провайдера сохраняются отдельно от остального профиля
+async function updateServices(services) {
+  await delay();
+
+  const sessionId = localStorage.getItem(SESSION_KEY);
+  const users = readUsers();
+  const index = users.findIndex((candidate) => candidate.id === sessionId);
+  if (!sessionId || index === -1) {
+    throw new ApiError('Not authenticated', { status: 401 });
+  }
+  if (users[index].role !== 'provider') {
+    throw new ApiError('Only providers can have services', { status: 403 });
+  }
+  if (services.some((service) => !service.name || service.price == null)) {
+    throw new ApiError('Each service needs both a name and a price', { status: 422, field: 'services' });
+  }
+
+  users[index] = { ...users[index], services };
+  writeUsers(users);
+
+  return toPublicUser(users[index]);
+}
+
+// Публичный профиль для страницы по QR: только то, что можно показывать посторонним.
+// Контакт отдаём только выбранный юзером как предпочтительный
+function toPublicProfile(user) {
+  return {
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    role: user.role,
+    contact: user.contact ?? null,
+    ...(user.contact === 'email' && { email: user.email }),
+    ...(user.contact === 'phone' && { phone: user.phone }),
+    currency: user.currency ?? null,
+    createdAt: user.createdAt,
+    ...(user.role === 'provider' && {
+      activities: user.activities,
+      locations: user.locations,
+      priceFrom: user.priceFrom,
+      priceTo: user.priceTo,
+      services: user.services ?? [],
+    }),
+  };
+}
+
+async function getPublicProfile(id) {
+  await delay();
+
+  const user = readUsers().find((candidate) => candidate.id === id);
+  if (!user) {
+    throw new ApiError('Profile not found', { status: 404 });
+  }
+
+  return toPublicProfile(user);
+}
+
 async function logout() {
   await delay(100);
   localStorage.removeItem(SESSION_KEY);
@@ -191,4 +248,4 @@ async function getCurrentUser() {
   return user ? toPublicUser(user) : null;
 }
 
-export const mockAuthApi = { register, login, logout, getCurrentUser, updateProfile, updateCurrency };
+export const mockAuthApi = { register, login, logout, getCurrentUser, updateProfile, updateCurrency, updateServices, getPublicProfile };

@@ -48,7 +48,13 @@ export function AuthProvider({ children }) {
     return updatedUser;
   };
 
-  return <AuthContext.Provider value={{ user, isLoading, register, login, logout, updateProfile }}>{children}</AuthContext.Provider>;
+  const updateServices = async (services) => {
+    const updatedUser = await authApi.updateServices(services);
+    setUser(updatedUser);
+    return updatedUser;
+  };
+
+  return <AuthContext.Provider value={{ user, isLoading, register, login, logout, updateProfile, updateServices }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

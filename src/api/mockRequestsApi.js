@@ -29,7 +29,7 @@ function requireSession() {
   return sessionId;
 }
 
-async function createRequest({ location, serviceDescription, budgetFrom = null, budgetTo = null, currency = null }) {
+async function createRequest({ location, serviceDescription, budgetFrom = null, budgetTo = null, currency = null, schedule = null }) {
   await delay();
   const userId = requireSession();
 
@@ -42,6 +42,9 @@ async function createRequest({ location, serviceDescription, budgetFrom = null, 
   if (budgetFrom !== null && budgetTo !== null && budgetFrom > budgetTo) {
     throw new ApiError('Minimum budget cannot be greater than maximum budget', { status: 422, field: 'budgetFrom' });
   }
+  if (schedule?.type !== 'once' && schedule?.type !== 'recurring') {
+    throw new ApiError('Schedule is required', { status: 422, field: 'schedule' });
+  }
 
   const newRequest = {
     id: crypto.randomUUID(),
@@ -51,6 +54,7 @@ async function createRequest({ location, serviceDescription, budgetFrom = null, 
     budgetFrom,
     budgetTo,
     currency,
+    schedule,
     createdAt: new Date().toISOString(),
   };
 
@@ -68,4 +72,21 @@ async function getMyRequests() {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-export const mockRequestsApi = { createRequest, getMyRequests };
+// Удалить можно только свою заявку
+async function deleteRequest(id) {
+  await delay();
+  const userId = requireSession();
+
+  const requests = readRequests();
+  const target = requests.find((item) => item.id === id);
+  if (!target) {
+    throw new ApiError('Request not found', { status: 404 });
+  }
+  if (target.userId !== userId) {
+    throw new ApiError('You can only delete your own requests', { status: 403 });
+  }
+
+  writeRequests(requests.filter((item) => item.id !== id));
+}
+
+export const mockRequestsApi = { createRequest, getMyRequests, deleteRequest };

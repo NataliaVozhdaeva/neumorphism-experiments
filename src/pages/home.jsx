@@ -50,8 +50,9 @@ function Home() {
         .split(',')
         .map((item) => item.trim())
         .filter(Boolean);
-      const priceFrom = Number(formData.get('priceFrom'));
-      const priceTo = Number(formData.get('priceTo'));
+      // Цена необязательна: пустое поле сохраняем как null, а не как 0
+      const priceFrom = formData.get('priceFrom') ? Number(formData.get('priceFrom')) : null;
+      const priceTo = formData.get('priceTo') ? Number(formData.get('priceTo')) : null;
 
       if (activities.length === 0) {
         setCreateError('Specify at least one area of activity');
@@ -61,11 +62,8 @@ function Home() {
         setCreateError('Specify at least one location');
         return;
       }
-      if (!formData.get('priceFrom') || !formData.get('priceTo')) {
-        setCreateError('Specify your price range');
-        return;
-      }
-      if (priceFrom > priceTo) {
+      // Сравниваем границы только если указаны обе
+      if (priceFrom !== null && priceTo !== null && priceFrom > priceTo) {
         setCreateError('Minimum price cannot be greater than maximum price');
         return;
       }
@@ -89,6 +87,8 @@ function Home() {
       form.reset();
       setContact('');
       setRole('');
+      // Провайдера сразу ведём в профиль — заполнить услуги и цены
+      if (role === 'provider') navigate('/profile');
     } catch (err) {
       setCreateError(err.message);
     }
@@ -135,7 +135,7 @@ function Home() {
               </label>
               <label className='login-label'>
                 <span>Password</span>
-                <Input className='password' type='password' name='password' placeholder='password' id='login-password' ref={passwordInput} required />
+                <PasswordInput className='password' name='password' placeholder='password' id='login-password' ref={passwordInput} required />
               </label>
               {loginError && <p className='form-error'>{loginError}</p>}
               <Btn text='Login into your account' className='accountBtn accountBtn-login btn-green' type='submit' />
@@ -166,9 +166,9 @@ function Home() {
                   />
                   <Input className='locations' type='text' name='locations' placeholder='Locations, comma separated (e.g. New York, Boston)' required />
                   <div className='price-range'>
-                    <Input className='price-input price-from' type='number' name='priceFrom' placeholder='Price from' min='0' required />
+                    <Input className='price-input price-from' type='number' name='priceFrom' placeholder='Price from' min='0' />
                     <span>—</span>
-                    <Input className='price-input price-to' type='number' name='priceTo' placeholder='Price to' min='0' required />
+                    <Input className='price-input price-to' type='number' name='priceTo' placeholder='Price to' min='0' />
                   </div>
                 </div>
               )}

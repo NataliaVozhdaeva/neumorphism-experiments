@@ -8,7 +8,10 @@ import Input from '../components/input';
 import Textarea from '../components/textarea';
 import Select from '../components/select';
 import Btn from '../components/button';
-import { FALLBACK_CURRENCY, formatAmount, getCurrencyOptions } from '../utils/currency';
+import { QRCodeSVG } from 'qrcode.react';
+import { FALLBACK_CURRENCY, formatRange, getCurrencyOptions } from '../utils/currency';
+import ServicesForm from '../components/servicesForm';
+import PriceList from '../components/priceList';
 import '../styles/profile.css';
 
 const contactLabels = {
@@ -31,11 +34,6 @@ const roleOptions = [
   { value: 'provider', label: 'Provider' },
 ];
 
-// Пустой шаблон услуги: id нужен как key для списка и чтобы редактировать конкретную строку
-function createEmptyService() {
-  return { id: crypto.randomUUID(), name: '', price: '' };
-}
-
 function buildEditForm(user) {
   return {
     contact: user.contact ?? '',
@@ -48,8 +46,6 @@ function buildEditForm(user) {
     locations: user.locations?.join(', ') ?? '',
     priceFrom: user.priceFrom ?? '',
     priceTo: user.priceTo ?? '',
-    // Цену в форме храним строкой, как её отдаёт input; если услуг нет — сразу даём одну пустую строку
-    services: user.services?.length ? user.services.map((service) => ({ ...service, price: String(service.price) })) : [createEmptyService()],
   };
 }
 
@@ -58,6 +54,7 @@ function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(null);
   const [editError, setEditError] = useState('');
+  const [isServicesFormOpen, setIsServicesFormOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -81,21 +78,6 @@ function Profile() {
 
   const updateField = (field, value) => {
     setEditForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const updateService = (id, field, value) => {
-    setEditForm((prev) => ({
-      ...prev,
-      services: prev.services.map((service) => (service.id === id ? { ...service, [field]: value } : service)),
-    }));
-  };
-
-  const addService = () => {
-    setEditForm((prev) => ({ ...prev, services: [...prev.services, createEmptyService()] }));
-  };
-
-  const removeService = (id) => {
-    setEditForm((prev) => ({ ...prev, services: prev.services.filter((service) => service.id !== id) }));
   };
 
   const handleEditSubmit = async (e) => {
@@ -125,8 +107,9 @@ function Profile() {
         .split(',')
         .map((item) => item.trim())
         .filter(Boolean);
-      const priceFrom = Number(editForm.priceFrom);
-      const priceTo = Number(editForm.priceTo);
+      // Цена необязательна: пустое поле сохраняем как null, а не как 0
+      const priceFrom = editForm.priceFrom !== '' ? Number(editForm.priceFrom) : null;
+      const priceTo = editForm.priceTo !== '' ? Number(editForm.priceTo) : null;
 
       if (activities.length === 0) {
         setEditError('Specify at least one area of activity');
@@ -136,24 +119,13 @@ function Profile() {
         setEditError('Specify at least one location');
         return;
       }
-      if (!editForm.priceFrom || !editForm.priceTo) {
-        setEditError('Specify your price range');
-        return;
-      }
-      if (priceFrom > priceTo) {
+      // Сравниваем границы только если указаны обе
+      if (priceFrom !== null && priceTo !== null && priceFrom > priceTo) {
         setEditError('Minimum price cannot be greater than maximum price');
         return;
       }
 
-      // Полностью пустые строки просто отбрасываем, наполовину заполненные — ошибка
-      const filledServices = editForm.services.filter((service) => service.name.trim() || service.price !== '');
-      if (filledServices.some((service) => !service.name.trim() || service.price === '')) {
-        setEditError('Each service needs both a name and a price');
-        return;
-      }
-      const services = filledServices.map((service) => ({ id: service.id, name: service.name.trim(), price: Number(service.price) }));
-
-      roleData = { activities, locations, priceFrom, priceTo, services };
+      roleData = { activities, locations, priceFrom, priceTo };
     }
 
     try {
@@ -320,7 +292,6 @@ function Profile() {
                       placeholder='from'
                       value={editForm.priceFrom}
                       onChange={(e) => updateField('priceFrom', e.target.value)}
-                      required
                     />
                     <span>—</span>
                     <Input
@@ -330,37 +301,9 @@ function Profile() {
                       placeholder='to'
                       value={editForm.priceTo}
                       onChange={(e) => updateField('priceTo', e.target.value)}
-                      required
                     />
                   </div>
                 </label>
-                <div className='field-label'>
-                  <span>Services</span>
-                  <ul className='services-list'>
-                    {editForm.services.map((service) => (
-                      <li key={service.id} className='service-row'>
-                        <Input
-                          className='service-name'
-                          type='text'
-                          placeholder='Service (e.g. Fix a leaking tap)'
-                          value={service.name}
-                          onChange={(e) => updateService(service.id, 'name', e.target.value)}
-                        />
-                        <Input
-                          className='service-price'
-                          type='number'
-                          min='0'
-                          placeholder='price'
-                          value={service.price}
-                          onChange={(e) => updateService(service.id, 'price', e.target.value)}
-                        />
-                        <span className='service-currency'>{editForm.currency || FALLBACK_CURRENCY}</span>
-                        <Btn text='×' className='service-remove' aria-label='Remove service' onClick={() => removeService(service.id)} />
-                      </li>
-                    ))}
-                  </ul>
-                  <Btn text='+ Add service' className='service-add' onClick={addService} />
-                </div>
               </div>
             )}
 
@@ -387,6 +330,16 @@ function Profile() {
                 <dd>{new Date(user.createdAt).toLocaleDateString()}</dd>
               </div>
             </dl>
+            {/* QR ведёт на публичную страницу профиля — её можно открыть без логина.
+                Нужен только провайдеру, чтобы делиться профилем с кастомерами */}
+            {user.role === 'provider' && (
+              <div className='profile-qr-wrapper'>
+                <a className='profile-qr' href={`/profile/${user.id}`} target='_blank' rel='noreferrer' aria-label='Open your public profile'>
+                  <QRCodeSVG value={`${window.location.origin}/profile/${user.id}`} size={96} bgColor='transparent' fgColor='#3a5a4a' />
+                </a>
+                <span className='hint-text'>Save this QR code to share your profile with customers anytime</span>
+              </div>
+            )}
             <Btn text='Log Out' className='accountBtn accountBtn-logout' onClick={handleLogout} />
           </div>
 
@@ -442,28 +395,20 @@ function Profile() {
                   </div>
                   <div className='profile-row'>
                     <dt>Price range</dt>
-                    <dd>{user.priceFrom != null && user.priceTo != null ? `${user.priceFrom} – ${user.priceTo}` : 'Not set'}</dd>
-                  </div>
-                  <div className='profile-row profile-row--services'>
-                    <dt>Services</dt>
-                    <dd>
-                      {user.services?.length ? (
-                        <ul className='services-view'>
-                          {user.services.map((service) => (
-                            <li key={service.id}>
-                              {service.name} — {formatAmount(service.price, user.currency ?? FALLBACK_CURRENCY)}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        'Not set'
-                      )}
-                    </dd>
+                    <dd>{formatRange(user.priceFrom, user.priceTo, user.currency ?? FALLBACK_CURRENCY)}</dd>
                   </div>
                 </>
               )}
             </dl>
           </div>
+
+          {/* Услуги провайдера: прайс-лист, форма добавления открывается по кнопке в нём */}
+          {user.role === 'provider' && (
+            <>
+              <PriceList onAddClick={isServicesFormOpen ? undefined : () => setIsServicesFormOpen(true)} />
+              {isServicesFormOpen && <ServicesForm onClose={() => setIsServicesFormOpen(false)} />}
+            </>
+          )}
         </div>
       )}
     </div>

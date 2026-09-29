@@ -20,8 +20,8 @@ export function formatAmount(amount, currency) {
   }
 }
 
-// Если указана только одна граница бюджета — показываем "from" или "up to"
-export function formatBudget(from, to, currency) {
+// Диапазон бюджета/цены; если указана только одна граница — показываем "from" или "up to"
+export function formatRange(from, to, currency) {
   if (from != null && to != null) return `${formatAmount(from, currency)} – ${formatAmount(to, currency)}`;
   if (from != null) return `from ${formatAmount(from, currency)}`;
   if (to != null) return `up to ${formatAmount(to, currency)}`;
