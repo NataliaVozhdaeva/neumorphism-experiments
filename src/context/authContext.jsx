@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
 import { authApi } from '../api/authApi';
+import { detectCurrency } from '../api/geoApi';
 
 const AuthContext = createContext(null);
 
@@ -14,6 +15,15 @@ export function AuthProvider({ children }) {
       .then(setUser)
       .finally(() => setIsLoading(false));
   }, []);
+
+  // Валюту определяем по IP один раз и сохраняем в профиль — дальше юзер меняет её сам.
+  // Если определить не удалось, ничего не сохраняем и попробуем при следующей загрузке
+  useEffect(() => {
+    if (!user || user.currency) return;
+    detectCurrency().then((currency) => {
+      if (currency) authApi.updateCurrency(currency).then(setUser);
+    });
+  }, [user]);
 
   const register = async (data) => {
     const registeredUser = await authApi.register(data);

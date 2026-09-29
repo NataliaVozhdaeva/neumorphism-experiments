@@ -8,6 +8,7 @@ import Input from '../components/input';
 import Textarea from '../components/textarea';
 import Select from '../components/select';
 import Btn from '../components/button';
+import { FALLBACK_CURRENCY, formatAmount, getCurrencyOptions } from '../utils/currency';
 import '../styles/profile.css';
 
 const contactLabels = {
@@ -30,6 +31,11 @@ const roleOptions = [
   { value: 'provider', label: 'Provider' },
 ];
 
+// Пустой шаблон услуги: id нужен как key для списка и чтобы редактировать конкретную строку
+function createEmptyService() {
+  return { id: crypto.randomUUID(), name: '', price: '' };
+}
+
 function buildEditForm(user) {
   return {
     contact: user.contact ?? '',
@@ -37,10 +43,13 @@ function buildEditForm(user) {
     firstName: user.firstName ?? '',
     lastName: user.lastName ?? '',
     role: user.role ?? '',
+    currency: user.currency ?? '',
     activities: user.activities?.join(', ') ?? '',
     locations: user.locations?.join(', ') ?? '',
     priceFrom: user.priceFrom ?? '',
     priceTo: user.priceTo ?? '',
+    // Цену в форме храним строкой, как её отдаёт input; если услуг нет — сразу даём одну пустую строку
+    services: user.services?.length ? user.services.map((service) => ({ ...service, price: String(service.price) })) : [createEmptyService()],
   };
 }
 
@@ -72,6 +81,21 @@ function Profile() {
 
   const updateField = (field, value) => {
     setEditForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updateService = (id, field, value) => {
+    setEditForm((prev) => ({
+      ...prev,
+      services: prev.services.map((service) => (service.id === id ? { ...service, [field]: value } : service)),
+    }));
+  };
+
+  const addService = () => {
+    setEditForm((prev) => ({ ...prev, services: [...prev.services, createEmptyService()] }));
+  };
+
+  const removeService = (id) => {
+    setEditForm((prev) => ({ ...prev, services: prev.services.filter((service) => service.id !== id) }));
   };
 
   const handleEditSubmit = async (e) => {
@@ -121,7 +145,15 @@ function Profile() {
         return;
       }
 
-      roleData = { activities, locations, priceFrom, priceTo };
+      // Полностью пустые строки просто отбрасываем, наполовину заполненные — ошибка
+      const filledServices = editForm.services.filter((service) => service.name.trim() || service.price !== '');
+      if (filledServices.some((service) => !service.name.trim() || service.price === '')) {
+        setEditError('Each service needs both a name and a price');
+        return;
+      }
+      const services = filledServices.map((service) => ({ id: service.id, name: service.name.trim(), price: Number(service.price) }));
+
+      roleData = { activities, locations, priceFrom, priceTo, services };
     }
 
     try {
@@ -131,6 +163,8 @@ function Profile() {
         firstName: editForm.firstName.trim(),
         lastName: editForm.lastName.trim(),
         role: editForm.role,
+        // Пустую валюту не отправляем, чтобы не помешать её определению по IP
+        ...(editForm.currency && { currency: editForm.currency }),
         ...roleData,
       });
       setIsEditing(false);
@@ -185,26 +219,6 @@ function Profile() {
             )}
 
             <div className='additional-info-fields'>
-              <label className='field-label field-label--inline'>
-                <span>Preferred contact</span>
-                <Select
-                  className='select-contact'
-                  options={contactOptions}
-                  value={editForm.contact}
-                  onChange={(value) => updateField('contact', value)}
-                  placeholder='Preferred way to contact'
-                />
-              </label>
-              <label className='field-label field-label--inline'>
-                <span>Role</span>
-                <Select
-                  className='select-role'
-                  options={roleOptions}
-                  value={editForm.role}
-                  onChange={(value) => updateField('role', value)}
-                  placeholder='I am a...'
-                />
-              </label>
               <label className='field-label'>
                 <span>First name</span>
                 <Input
@@ -225,6 +239,36 @@ function Profile() {
                   value={editForm.lastName}
                   onChange={(e) => updateField('lastName', e.target.value)}
                   required
+                />
+              </label>
+              <label className='field-label field-label--inline'>
+                <span>Preferred contact</span>
+                <Select
+                  className='select-contact'
+                  options={contactOptions}
+                  value={editForm.contact}
+                  onChange={(value) => updateField('contact', value)}
+                  placeholder='Preferred way to contact'
+                />
+              </label>
+              <label className='field-label field-label--inline'>
+                <span>Role</span>
+                <Select
+                  className='select-role'
+                  options={roleOptions}
+                  value={editForm.role}
+                  onChange={(value) => updateField('role', value)}
+                  placeholder='I am a...'
+                />
+              </label>
+              <label className='field-label field-label--inline'>
+                <span>Currency</span>
+                <Select
+                  className='select-currency'
+                  options={getCurrencyOptions(editForm.currency)}
+                  value={editForm.currency}
+                  onChange={(value) => updateField('currency', value)}
+                  placeholder='Currency'
                 />
               </label>
             </div>
@@ -290,6 +334,33 @@ function Profile() {
                     />
                   </div>
                 </label>
+                <div className='field-label'>
+                  <span>Services</span>
+                  <ul className='services-list'>
+                    {editForm.services.map((service) => (
+                      <li key={service.id} className='service-row'>
+                        <Input
+                          className='service-name'
+                          type='text'
+                          placeholder='Service (e.g. Fix a leaking tap)'
+                          value={service.name}
+                          onChange={(e) => updateService(service.id, 'name', e.target.value)}
+                        />
+                        <Input
+                          className='service-price'
+                          type='number'
+                          min='0'
+                          placeholder='price'
+                          value={service.price}
+                          onChange={(e) => updateService(service.id, 'price', e.target.value)}
+                        />
+                        <span className='service-currency'>{editForm.currency || FALLBACK_CURRENCY}</span>
+                        <Btn text='×' className='service-remove' aria-label='Remove service' onClick={() => removeService(service.id)} />
+                      </li>
+                    ))}
+                  </ul>
+                  <Btn text='+ Add service' className='service-add' onClick={addService} />
+                </div>
               </div>
             )}
 
@@ -334,16 +405,6 @@ function Profile() {
 
             <dl className='profile-details'>
               <div className='profile-row'>
-                <dt>Preferred contact</dt>
-                <dd>{contactLabels[user.contact] ?? 'Not set'}</dd>
-              </div>
-              {user.contact === 'phone' && (
-                <div className='profile-row'>
-                  <dt>Phone number</dt>
-                  <dd>{user.phone || 'Not set'}</dd>
-                </div>
-              )}
-              <div className='profile-row'>
                 <dt>First name</dt>
                 <dd>{user.firstName || 'Not set'}</dd>
               </div>
@@ -352,9 +413,23 @@ function Profile() {
                 <dd>{user.lastName || 'Not set'}</dd>
               </div>
               <div className='profile-row'>
+                <dt>Preferred contact</dt>
+                <dd>{contactLabels[user.contact] ?? 'Not set'}</dd>
+              </div>
+              <div className='profile-row'>
                 <dt>Role</dt>
                 <dd>{roleLabels[user.role] ?? 'Not set'}</dd>
               </div>
+              <div className='profile-row'>
+                <dt>Currency</dt>
+                <dd>{user.currency ?? 'Not set'}</dd>
+              </div>
+              {user.contact === 'phone' && (
+                <div className='profile-row'>
+                  <dt>Phone number</dt>
+                  <dd>{user.phone || 'Not set'}</dd>
+                </div>
+              )}
               {user.role === 'provider' && (
                 <>
                   <div className='profile-row'>
@@ -368,6 +443,22 @@ function Profile() {
                   <div className='profile-row'>
                     <dt>Price range</dt>
                     <dd>{user.priceFrom != null && user.priceTo != null ? `${user.priceFrom} – ${user.priceTo}` : 'Not set'}</dd>
+                  </div>
+                  <div className='profile-row profile-row--services'>
+                    <dt>Services</dt>
+                    <dd>
+                      {user.services?.length ? (
+                        <ul className='services-view'>
+                          {user.services.map((service) => (
+                            <li key={service.id}>
+                              {service.name} — {formatAmount(service.price, user.currency ?? FALLBACK_CURRENCY)}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        'Not set'
+                      )}
+                    </dd>
                   </div>
                 </>
               )}

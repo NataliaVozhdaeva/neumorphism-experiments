@@ -76,4 +76,8 @@ async function updateProfile(updates) {
   return request('/auth/profile', { method: 'PATCH', body: JSON.stringify(updates) });
 }
 
-export const realAuthApi = { register, login, logout, getCurrentUser, updateProfile };
+async function updateCurrency(currency) {
+  return request('/auth/profile', { method: 'PATCH', body: JSON.stringify({ currency }) });
+}
+
+export const realAuthApi = { register, login, logout, getCurrentUser, updateProfile, updateCurrency };

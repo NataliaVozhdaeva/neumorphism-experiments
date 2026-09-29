@@ -206,3 +206,64 @@
 .profile-input {
   flex-grow: 1;
 }
+
+/* Список услуг провайдера: строка "название + цена + валюта + удалить" */
+.services-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  padding: 0;
+  margin: 0;
+
+  list-style: none;
+}
+
+.service-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.service-row .service-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.service-row .service-price {
+  width: 110px;
+}
+
+.service-currency {
+  font-weight: bold;
+  color: var(--green-text);
+}
+
+.service-remove {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+
+  font-size: 18px;
+}
+
+.service-add {
+  padding: 8px 16px;
+}
+
+/* Список услуг в режиме просмотра — выравниваем заголовок по верху */
+.profile-row--services {
+  align-items: flex-start;
+}
+
+.services-view {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  padding: 0;
+  margin: 0;
+
+  list-style: none;
+}

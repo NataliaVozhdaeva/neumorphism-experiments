@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router';
+import { Link, Navigate } from 'react-router';
 
 import { useAuth } from '../context/authContext';
 import { requestsApi } from '../api/requestsApi';
@@ -7,21 +7,16 @@ import Nav from '../components/nav';
 import Input from '../components/input';
 import Textarea from '../components/textarea';
 import Btn from '../components/button';
+import { FALLBACK_CURRENCY, formatBudget } from '../utils/currency';
 import '../styles/requests.css';
-
-// Если указана только одна граница бюджета — показываем "from" или "up to"
-function formatBudget(from, to) {
-  if (from != null && to != null) return `${from} – ${to}`;
-  if (from != null) return `from ${from}`;
-  if (to != null) return `up to ${to}`;
-  return 'Not set';
-}
 
 function Requests() {
   const { user, isLoading } = useAuth();
   const [requests, setRequests] = useState([]);
   const [createError, setCreateError] = useState('');
   const isCustomer = user?.role === 'customer';
+  // Валюта берётся из профиля; поменять её можно на странице профиля
+  const currency = user?.currency ?? FALLBACK_CURRENCY;
 
   // Историю заявок подгружаем только заказчикам — у провайдера своих заявок нет
   useEffect(() => {
@@ -57,7 +52,7 @@ function Requests() {
     }
 
     try {
-      const newRequest = await requestsApi.createRequest({ location, serviceDescription, budgetFrom, budgetTo });
+      const newRequest = await requestsApi.createRequest({ location, serviceDescription, budgetFrom, budgetTo, currency });
       setRequests((prev) => [newRequest, ...prev]);
       form.reset();
     } catch (err) {
@@ -99,6 +94,10 @@ function Requests() {
           <Input className='budget-input' type='number' name='budgetFrom' placeholder='Budget from' min='0' />
           <span>—</span>
           <Input className='budget-input' type='number' name='budgetTo' placeholder='Budget to' min='0' />
+          <span className='budget-currency'>{currency}</span>
+          <Link to='/profile' className='budget-currency-change'>
+            change
+          </Link>
         </div>
         {createError && <p className='form-error'>{createError}</p>}
         <Btn text='Create request' className='request-submit btn-green' type='submit' />
@@ -123,7 +122,7 @@ function Requests() {
                   </div>
                   <div className='request-row'>
                     <dt>Budget</dt>
-                    <dd>{formatBudget(item.budgetFrom, item.budgetTo)}</dd>
+                    <dd>{formatBudget(item.budgetFrom, item.budgetTo, item.currency)}</dd>
                   </div>
                   <div className='request-row'>
                     <dt>Created</dt>

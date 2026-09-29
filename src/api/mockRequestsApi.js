@@ -29,7 +29,7 @@ function requireSession() {
   return sessionId;
 }
 
-async function createRequest({ location, serviceDescription, budgetFrom = null, budgetTo = null }) {
+async function createRequest({ location, serviceDescription, budgetFrom = null, budgetTo = null, currency = null }) {
   await delay();
   const userId = requireSession();
 
@@ -50,6 +50,7 @@ async function createRequest({ location, serviceDescription, budgetFrom = null, 
     serviceDescription,
     budgetFrom,
     budgetTo,
+    currency,
     createdAt: new Date().toISOString(),
   };
 

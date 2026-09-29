@@ -126,6 +126,7 @@ async function updateProfile(updates) {
     locations,
     priceFrom,
     priceTo,
+    services,
     ...rest
   } = updates;
 
@@ -148,13 +149,31 @@ async function updateProfile(updates) {
     locations: undefined,
     priceFrom: undefined,
     priceTo: undefined,
-    ...(role === 'provider' && { activities, locations, priceFrom, priceTo }),
+    services: undefined,
+    ...(role === 'provider' && { activities, locations, priceFrom, priceTo, services: services ?? [] }),
   };
 
   users[index] = updatedUser;
   writeUsers(users);
 
   return toPublicUser(updatedUser);
+}
+
+// Отдельный метод для валюты: updateProfile требует полный набор полей профиля
+async function updateCurrency(currency) {
+  await delay(100);
+
+  const sessionId = localStorage.getItem(SESSION_KEY);
+  const users = readUsers();
+  const index = users.findIndex((candidate) => candidate.id === sessionId);
+  if (!sessionId || index === -1) {
+    throw new ApiError('Not authenticated', { status: 401 });
+  }
+
+  users[index] = { ...users[index], currency };
+  writeUsers(users);
+
+  return toPublicUser(users[index]);
 }
 
 async function logout() {
@@ -172,4 +191,4 @@ async function getCurrentUser() {
   return user ? toPublicUser(user) : null;
 }
 
-export const mockAuthApi = { register, login, logout, getCurrentUser, updateProfile };
+export const mockAuthApi = { register, login, logout, getCurrentUser, updateProfile, updateCurrency };

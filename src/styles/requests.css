@@ -100,3 +100,15 @@
   color: var(--green-text);
   font-weight: bold;
 }
+
+.request-budget .budget-currency {
+  flex-shrink: 0;
+  font-weight: bold;
+  color: var(--green-text);
+}
+
+.budget-currency-change {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--blue);
+}
