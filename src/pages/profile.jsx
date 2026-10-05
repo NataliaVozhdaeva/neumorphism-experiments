@@ -10,6 +10,7 @@ import Select from '../components/select';
 import Btn from '../components/button';
 import { QRCodeSVG } from 'qrcode.react';
 import { FALLBACK_CURRENCY, formatRange, getCurrencyOptions } from '../utils/currency';
+import { getIndustryLabel, industryOptions } from '../utils/industries';
 import ServicesForm from '../components/servicesForm';
 import PriceList from '../components/priceList';
 import '../styles/profile.css';
@@ -42,6 +43,7 @@ function buildEditForm(user) {
     lastName: user.lastName ?? '',
     role: user.role ?? '',
     currency: user.currency ?? '',
+    industry: user.industry ?? '',
     activities: user.activities?.join(', ') ?? '',
     locations: user.locations?.join(', ') ?? '',
     priceFrom: user.priceFrom ?? '',
@@ -111,6 +113,10 @@ function Profile() {
       const priceFrom = editForm.priceFrom !== '' ? Number(editForm.priceFrom) : null;
       const priceTo = editForm.priceTo !== '' ? Number(editForm.priceTo) : null;
 
+      if (!editForm.industry) {
+        setEditError('Please choose an industry');
+        return;
+      }
       if (activities.length === 0) {
         setEditError('Specify at least one area of activity');
         return;
@@ -125,7 +131,7 @@ function Profile() {
         return;
       }
 
-      roleData = { activities, locations, priceFrom, priceTo };
+      roleData = { industry: editForm.industry, activities, locations, priceFrom, priceTo };
     }
 
     try {
@@ -261,6 +267,16 @@ function Profile() {
 
             {editForm.role === 'provider' && (
               <div className='role-fields'>
+                <label className='field-label field-label--inline'>
+                  <span>Industry</span>
+                  <Select
+                    className='select-industry'
+                    options={industryOptions}
+                    value={editForm.industry}
+                    onChange={(value) => updateField('industry', value)}
+                    placeholder='Industry'
+                  />
+                </label>
                 <label className='field-label'>
                   <span>Areas of activity</span>
                   <Textarea
@@ -385,6 +401,10 @@ function Profile() {
               )}
               {user.role === 'provider' && (
                 <>
+                  <div className='profile-row'>
+                    <dt>Industry</dt>
+                    <dd>{getIndustryLabel(user.industry)}</dd>
+                  </div>
                   <div className='profile-row'>
                     <dt>Areas of activity</dt>
                     <dd>{user.activities?.join(', ') || 'Not set'}</dd>

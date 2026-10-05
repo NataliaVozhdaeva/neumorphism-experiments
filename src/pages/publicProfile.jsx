@@ -5,6 +5,7 @@ import { authApi } from '../api/authApi';
 import Avatar from '../components/avatar';
 import Nav from '../components/nav';
 import { FALLBACK_CURRENCY, formatAmount, formatRange } from '../utils/currency';
+import { getIndustryLabel } from '../utils/industries';
 import '../styles/profile.css';
 
 const roleLabels = {
@@ -77,6 +78,10 @@ function PublicProfile() {
           <>
             <div className='profile-card additional-info'>
               <dl className='profile-details'>
+                <div className='profile-row'>
+                  <dt>Industry</dt>
+                  <dd>{getIndustryLabel(profile.industry)}</dd>
+                </div>
                 <div className='profile-row'>
                   <dt>Areas of activity</dt>
                   <dd>{profile.activities?.join(', ') || 'Not set'}</dd>

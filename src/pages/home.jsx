@@ -9,6 +9,7 @@ import Modal from '../components/modal';
 import Select from '../components/select';
 import Textarea from '../components/textarea';
 import Nav from '../components/nav';
+import { industryOptions } from '../utils/industries';
 import '../styles/home.css';
 
 function Home() {
@@ -17,6 +18,7 @@ function Home() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [contact, setContact] = useState('');
   const [role, setRole] = useState('');
+  const [industry, setIndustry] = useState('');
   const [createError, setCreateError] = useState('');
   const [loginError, setLoginError] = useState('');
   const emailInput = useRef(null);
@@ -54,6 +56,10 @@ function Home() {
       const priceFrom = formData.get('priceFrom') ? Number(formData.get('priceFrom')) : null;
       const priceTo = formData.get('priceTo') ? Number(formData.get('priceTo')) : null;
 
+      if (!industry) {
+        setCreateError('Please choose an industry');
+        return;
+      }
       if (activities.length === 0) {
         setCreateError('Specify at least one area of activity');
         return;
@@ -68,7 +74,7 @@ function Home() {
         return;
       }
 
-      roleData = { activities, locations, priceFrom, priceTo };
+      roleData = { industry, activities, locations, priceFrom, priceTo };
     }
 
     try {
@@ -87,6 +93,7 @@ function Home() {
       form.reset();
       setContact('');
       setRole('');
+      setIndustry('');
       // Провайдера сразу ведём в профиль — заполнить услуги и цены
       if (role === 'provider') navigate('/profile');
     } catch (err) {
@@ -158,6 +165,7 @@ function Home() {
 
               {role === 'provider' && (
                 <div className='role-fields'>
+                  <Select className='select-industry' options={industryOptions} value={industry} onChange={setIndustry} placeholder='Industry' />
                   <Textarea
                     className='activities'
                     name='activities'

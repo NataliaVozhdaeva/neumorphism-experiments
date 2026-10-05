@@ -1,4 +1,5 @@
 import { ApiError } from './apiError';
+import { MOCK_PROVIDERS } from './mockProviders';
 
 // Мок "базы данных" поверх localStorage — переживает перезагрузку страницы,
 // но полностью изолирован от реального бэкенда
@@ -22,6 +23,17 @@ function delay(ms = NETWORK_DELAY_MS) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Добавляет тестовых провайдеров в "базу", если их там ещё нет.
+// Проверяем по id, чтобы не трогать уже существующих юзеров и их правки
+export function seedMockProviders() {
+  const users = readUsers();
+  const existingIds = new Set(users.map((user) => user.id));
+  const missing = MOCK_PROVIDERS.filter((provider) => !existingIds.has(provider.id));
+  if (missing.length > 0) {
+    writeUsers([...users, ...missing]);
+  }
+}
+
 function toPublicUser(user) {
   const publicUser = { ...user };
   delete publicUser.password;
@@ -37,6 +49,7 @@ async function register({
   firstName,
   lastName,
   role,
+  industry,
   activities,
   locations,
   priceFrom,
@@ -56,6 +69,9 @@ async function register({
   if (contact === 'phone' && !phone) {
     throw new ApiError('Phone number is required', { status: 422, field: 'phone' });
   }
+  if (role === 'provider' && !industry) {
+    throw new ApiError('Industry is required', { status: 422, field: 'industry' });
+  }
 
   const users = readUsers();
   if (users.some((user) => user.email.toLowerCase() === email.toLowerCase())) {
@@ -73,7 +89,7 @@ async function register({
     lastName,
     role,
     // Поля, специфичные для provider — у customer своих полей в профиле нет
-    ...(role === 'provider' && { activities, locations, priceFrom, priceTo }),
+    ...(role === 'provider' && { industry, activities, locations, priceFrom, priceTo }),
     createdAt: new Date().toISOString(),
   };
 
@@ -122,6 +138,7 @@ async function updateProfile(updates) {
     contact,
     phone,
     role,
+    industry,
     activities,
     locations,
     priceFrom,
@@ -135,6 +152,9 @@ async function updateProfile(updates) {
   if (contact === 'phone' && !phone) {
     throw new ApiError('Phone number is required', { status: 422, field: 'phone' });
   }
+  if (role === 'provider' && !industry) {
+    throw new ApiError('Industry is required', { status: 422, field: 'industry' });
+  }
 
   const updatedUser = {
     ...users[index],
@@ -144,11 +164,12 @@ async function updateProfile(updates) {
     ...(contact === 'phone' && { phone }),
     role,
     // Поля предыдущей роли сбрасываются, чтобы при смене роли не оставалось чужих данных
+    industry: undefined,
     activities: undefined,
     locations: undefined,
     priceFrom: undefined,
     priceTo: undefined,
-    ...(role === 'provider' && { activities, locations, priceFrom, priceTo }),
+    ...(role === 'provider' && { industry, activities, locations, priceFrom, priceTo }),
     // Услуги редактируются отдельным методом; при уходе из провайдеров — сбрасываем
     ...(role !== 'provider' && { services: undefined }),
   };
@@ -213,6 +234,7 @@ function toPublicProfile(user) {
     currency: user.currency ?? null,
     createdAt: user.createdAt,
     ...(user.role === 'provider' && {
+      industry: user.industry ?? null,
       activities: user.activities,
       locations: user.locations,
       priceFrom: user.priceFrom,

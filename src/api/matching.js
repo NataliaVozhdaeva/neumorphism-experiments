@@ -29,6 +29,7 @@ const BUDGET_PRIORITY = { overlap: 2, unknown: 1, outside: 0 };
 function buildPrompt(request, providers) {
   const providersForAi = providers.map((provider) => ({
     id: provider.id,
+    industry: provider.industry ?? null,
     activities: provider.activities ?? [],
     locations: provider.locations ?? [],
     services: (provider.services ?? []).map((service) => ({ title: service.name, description: service.description ?? '' })),
@@ -47,7 +48,7 @@ ${JSON.stringify(providersForAi)}
 Tasks:
 1. Check the request. It is invalid only if it is meaningless, not a request for a service, or asks for something illegal.
 2. For every provider give a match score from 0 to 100:
-   - Service fit matters most: compare the needed service with the provider's activities and services by meaning, not exact words, in any language.
+   - Service fit matters most: compare the needed service with the provider's industry, activities and services by meaning, not exact words, in any language.
    - Location is not a hard filter but matters: a place inside the same city or metro area counts as the same location
      (e.g. Glenn Innes is a suburb of Auckland, so an Auckland provider fits), a different city (e.g. Wellington for Auckland) should lower the score a lot.
    - Do not consider price or budget.
