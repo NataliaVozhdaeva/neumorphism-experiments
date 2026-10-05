@@ -12,10 +12,76 @@ import { FALLBACK_CURRENCY, formatRange } from '../utils/currency';
 import { FREQUENCY_OPTIONS, UNIT_OPTIONS, formatSchedule, todayISO } from '../utils/schedule';
 import '../styles/requests.css';
 
+// Подпись о бюджете рядом с мэтчем; для 'unknown' ничего не пишем
+const budgetFitLabels = {
+  overlap: 'Within budget',
+  outside: 'Outside budget',
+};
+
+// Карточка заявки: общие поля для кастомера и провайдера
+function RequestDetails({ item }) {
+  return (
+    <dl className='request-details'>
+      <div className='request-row'>
+        <dt>Location</dt>
+        <dd>{item.location}</dd>
+      </div>
+      <div className='request-row'>
+        <dt>Service description</dt>
+        <dd>{item.serviceDescription}</dd>
+      </div>
+      <div className='request-row'>
+        <dt>Budget</dt>
+        <dd>{formatRange(item.budgetFrom, item.budgetTo, item.currency)}</dd>
+      </div>
+      <div className='request-row'>
+        <dt>When</dt>
+        <dd>{formatSchedule(item.schedule)}</dd>
+      </div>
+      <div className='request-row'>
+        <dt>Created</dt>
+        <dd>{new Date(item.createdAt).toLocaleDateString()}</dd>
+      </div>
+    </dl>
+  );
+}
+
+// Подобранные AI провайдеры — кастомер видит всех троих и может открыть их профили
+function MatchedProviders({ item }) {
+  // Заявки, созданные до появления мэтчинга
+  if (!item.matches) return null;
+
+  return (
+    <div className='request-matches'>
+      <h3 className='request-matches-title'>Matched providers</h3>
+      {item.matchingError && <p className='request-empty'>Couldn't find providers automatically: {item.matchingError}</p>}
+      {!item.matchingError && item.matches.length === 0 && <p className='request-empty'>No matching providers yet</p>}
+      {item.matches.length > 0 && (
+        <ul className='match-list'>
+          {item.matches.map((match) => (
+            <li key={match.providerId} className='match-item'>
+              <span className='match-score'>{match.score}%</span>
+              <div className='match-info'>
+                <Link to={`/profile/${match.providerId}`} className='match-name'>
+                  {match.providerName || 'Provider'}
+                </Link>
+                {match.reason && <span className='match-reason'>{match.reason}</span>}
+              </div>
+              {budgetFitLabels[match.budgetFit] && <span className={`match-budget match-budget--${match.budgetFit}`}>{budgetFitLabels[match.budgetFit]}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function Requests() {
   const { user, isLoading } = useAuth();
   const [requests, setRequests] = useState([]);
   const [createError, setCreateError] = useState('');
+  // Проверка и мэтчинг через AI занимают несколько секунд — блокируем кнопку, чтобы не отправить дважды
+  const [isSubmitting, setIsSubmitting] = useState(false);
   // Селекты у нас кастомные, в FormData не попадают — держим их значения в state
   const [frequency, setFrequency] = useState('');
   const [unit, setUnit] = useState('week');
@@ -25,11 +91,12 @@ function Requests() {
   // Валюта берётся из профиля; поменять её можно на странице профиля
   const currency = user?.currency ?? FALLBACK_CURRENCY;
 
-  // Историю заявок подгружаем только заказчикам — у провайдера своих заявок нет
+  // Кастомеру — его заявки, провайдеру — заявки, в которых он попал в топ-3
   useEffect(() => {
-    if (!isCustomer) return;
-    requestsApi.getMyRequests().then(setRequests);
-  }, [isCustomer]);
+    if (!user) return;
+    const load = isCustomer ? requestsApi.getMyRequests : requestsApi.getIncomingRequests;
+    load().then(setRequests);
+  }, [user, isCustomer]);
 
   const [deleteError, setDeleteError] = useState('');
 
@@ -110,6 +177,7 @@ function Requests() {
       schedule = { type: 'recurring', interval, unit, startDate: startDateValue, endDate };
     }
 
+    setIsSubmitting(true);
     try {
       const newRequest = await requestsApi.createRequest({ location, serviceDescription, budgetFrom, budgetTo, currency, schedule });
       setRequests((prev) => [newRequest, ...prev]);
@@ -119,6 +187,8 @@ function Requests() {
       setStartDate('');
     } catch (err) {
       setCreateError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -134,13 +204,30 @@ function Requests() {
     return <Navigate to='/' replace />;
   }
 
-  // У провайдера пока нет входящих заявок — показываем заметку, что их нет
+  // Провайдер видит заявки, которые AI подобрал под его профиль
   if (!isCustomer) {
     return (
       <div className='requests contentContainer'>
         <Nav />
         <h1 className='title title--main'>Requests</h1>
-        <p className='request-empty'>You have no requests at the moment</p>
+        {requests.length === 0 ? (
+          <p className='request-empty'>You have no requests at the moment</p>
+        ) : (
+          <ul className='request-list'>
+            {requests.map((item) => (
+              <li key={item.id} className='request-card'>
+                <p className='incoming-header'>
+                  <span className='match-score'>{item.myMatch.score}%</span>
+                  <span>
+                    Request matching your profile from <b>{item.customerName}</b>
+                  </span>
+                </p>
+                {item.myMatch.reason && <p className='match-reason'>{item.myMatch.reason}</p>}
+                <RequestDetails item={item} />
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     );
   }
@@ -211,7 +298,12 @@ function Requests() {
         )}
 
         {createError && <p className='form-error'>{createError}</p>}
-        <Btn text='Create request' className='request-submit btn-green' type='submit' />
+        <Btn
+          text={isSubmitting ? 'Checking the request and finding providers…' : 'Create request'}
+          className='request-submit btn-green'
+          type='submit'
+          disabled={isSubmitting}
+        />
       </form>
 
       <section className='request-history'>
@@ -224,28 +316,8 @@ function Requests() {
             {requests.map((item) => (
               <li key={item.id} className='request-card'>
                 <Btn text='Delete' className='request-delete' onClick={() => handleDelete(item.id)} />
-                <dl className='request-details'>
-                  <div className='request-row'>
-                    <dt>Location</dt>
-                    <dd>{item.location}</dd>
-                  </div>
-                  <div className='request-row'>
-                    <dt>Service description</dt>
-                    <dd>{item.serviceDescription}</dd>
-                  </div>
-                  <div className='request-row'>
-                    <dt>Budget</dt>
-                    <dd>{formatRange(item.budgetFrom, item.budgetTo, item.currency)}</dd>
-                  </div>
-                  <div className='request-row'>
-                    <dt>When</dt>
-                    <dd>{formatSchedule(item.schedule)}</dd>
-                  </div>
-                  <div className='request-row'>
-                    <dt>Created</dt>
-                    <dd>{new Date(item.createdAt).toLocaleDateString()}</dd>
-                  </div>
-                </dl>
+                <RequestDetails item={item} />
+                <MatchedProviders item={item} />
               </li>
             ))}
           </ul>

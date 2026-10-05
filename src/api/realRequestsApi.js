@@ -9,8 +9,13 @@ async function getMyRequests() {
   return request('/requests', { method: 'GET' });
 }
 
+// Мэтчинг на реальном бэкенде будет делаться на сервере — фронт только забирает результат
+async function getIncomingRequests() {
+  return request('/requests/incoming', { method: 'GET' });
+}
+
 async function deleteRequest(id) {
   return request(`/requests/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
-export const realRequestsApi = { createRequest, getMyRequests, deleteRequest };
+export const realRequestsApi = { createRequest, getMyRequests, getIncomingRequests, deleteRequest };
