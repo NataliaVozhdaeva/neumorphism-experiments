@@ -6,6 +6,7 @@ import Help from './pages/help';
 import Profile from './pages/profile';
 import PublicProfile from './pages/publicProfile';
 import Templates from './pages/templates';
+import Chat from './pages/chat';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path='/profile' element={<Profile />} />
           <Route path='/profile/:id' element={<PublicProfile />} />
           <Route path='/templates' element={<Templates />} />
+          <Route path='/chat/:id' element={<Chat />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

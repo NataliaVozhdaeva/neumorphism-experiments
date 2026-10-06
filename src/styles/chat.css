@@ -1,0 +1,124 @@
+.chat-back {
+  align-self: flex-start;
+  margin-bottom: 8px;
+
+  font-size: 12px;
+  color: var(--blue);
+}
+
+.chat-service {
+  max-width: 600px;
+  margin: 0 0 16px;
+
+  color: var(--gray);
+}
+
+/* Подтверждение начала работы обеими сторонами */
+.chat-work {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+
+  max-width: 600px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+
+  background: linear-gradient(145deg, var(--beige1), var(--beige2));
+  border-radius: 16px;
+  box-shadow:
+    var(--beige-shadow) 4px 4px 8px,
+    var(--lightpoint) -4px -4px 8px;
+}
+
+.chat-work-status {
+  flex: 1;
+  min-width: 200px;
+
+  font-size: 12px;
+  color: var(--gray);
+}
+
+.chat-work-status--started {
+  font-weight: bold;
+  color: var(--green-text);
+}
+
+.chat-confirm {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  max-width: 600px;
+  max-height: 50vh;
+  padding: 12px;
+  margin: 0 0 16px;
+  overflow-y: auto;
+
+  list-style: none;
+
+  border-radius: 16px;
+  box-shadow:
+    var(--beige-shadow) 2px 2px 6px inset,
+    var(--lightpoint) -2px -2px 6px inset;
+}
+
+.chat-empty {
+  color: var(--gray);
+  text-align: center;
+}
+
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  max-width: 75%;
+  padding: 8px 12px;
+  align-self: flex-start;
+
+  color: var(--green-text);
+  overflow-wrap: anywhere;
+
+  background: linear-gradient(145deg, var(--beige1), var(--beige2));
+  border-radius: 12px;
+}
+
+.chat-message--mine {
+  align-self: flex-end;
+  background: linear-gradient(145deg, var(--green1), var(--green2));
+}
+
+.chat-message-time {
+  align-self: flex-end;
+  font-size: 10px;
+  color: var(--gray);
+}
+
+.chat-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  max-width: 600px;
+}
+
+.chat-form .chat-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-send {
+  padding: 8px 16px;
+}
+
+.chat-send:disabled,
+.chat-confirm:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

@@ -4,6 +4,8 @@ import { MOCK_PROVIDERS } from './mockProviders';
 // Мок "базы данных" поверх localStorage — переживает перезагрузку страницы,
 // но полностью изолирован от реального бэкенда
 const DB_KEY = 'mockDb_users';
+// Сессия в sessionStorage, а не в localStorage: у каждой вкладки своя, так что в двух вкладках
+// можно сидеть под разными юзерами (кастомер и провайдер) при общей "базе"
 const SESSION_KEY = 'mockDb_session';
 const NETWORK_DELAY_MS = 400;
 
@@ -94,7 +96,7 @@ async function register({
   };
 
   writeUsers([...users, newUser]);
-  localStorage.setItem(SESSION_KEY, newUser.id);
+  sessionStorage.setItem(SESSION_KEY, newUser.id);
 
   return toPublicUser(newUser);
 }
@@ -112,14 +114,14 @@ async function login({ email, password }) {
     throw new ApiError('Incorrect password', { status: 401, field: 'password' });
   }
 
-  localStorage.setItem(SESSION_KEY, user.id);
+  sessionStorage.setItem(SESSION_KEY, user.id);
   return toPublicUser(user);
 }
 
 async function updateProfile(updates) {
   await delay();
 
-  const sessionId = localStorage.getItem(SESSION_KEY);
+  const sessionId = sessionStorage.getItem(SESSION_KEY);
   if (!sessionId) {
     throw new ApiError('Not authenticated', { status: 401 });
   }
@@ -184,7 +186,7 @@ async function updateProfile(updates) {
 async function updateCurrency(currency) {
   await delay(100);
 
-  const sessionId = localStorage.getItem(SESSION_KEY);
+  const sessionId = sessionStorage.getItem(SESSION_KEY);
   const users = readUsers();
   const index = users.findIndex((candidate) => candidate.id === sessionId);
   if (!sessionId || index === -1) {
@@ -201,7 +203,7 @@ async function updateCurrency(currency) {
 async function updateServices(services) {
   await delay();
 
-  const sessionId = localStorage.getItem(SESSION_KEY);
+  const sessionId = sessionStorage.getItem(SESSION_KEY);
   const users = readUsers();
   const index = users.findIndex((candidate) => candidate.id === sessionId);
   if (!sessionId || index === -1) {
@@ -257,13 +259,13 @@ async function getPublicProfile(id) {
 
 async function logout() {
   await delay(100);
-  localStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem(SESSION_KEY);
 }
 
 async function getCurrentUser() {
   await delay(100);
 
-  const sessionId = localStorage.getItem(SESSION_KEY);
+  const sessionId = sessionStorage.getItem(SESSION_KEY);
   if (!sessionId) return null;
 
   const user = readUsers().find((candidate) => candidate.id === sessionId);

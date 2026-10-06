@@ -25,11 +25,24 @@
 
 .login-label {
   display: flex;
+  flex: 1;
   flex-direction: column;
   row-gap: 4px;
+  min-width: 0;
 
   font-size: 12px;
   color: var(--gray);
+}
+
+/* Поля тянутся на всю ширину лейбла, а не берут размер по умолчанию — иначе в Chrome и Firefox они разные */
+.login-label .input,
+.login-label .password-input {
+  align-self: stretch;
+}
+
+.login-label .input {
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .form-error {

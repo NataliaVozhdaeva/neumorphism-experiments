@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate } from 'react-router';
+import { Link, Navigate, useNavigate } from 'react-router';
 
 import { useAuth } from '../context/authContext';
 import { requestsApi } from '../api/requestsApi';
+import { chatApi } from '../api/chatApi';
 import Nav from '../components/nav';
 import Input from '../components/input';
 import Textarea from '../components/textarea';
@@ -15,8 +16,27 @@ import '../styles/requests.css';
 // Подпись о бюджете рядом с мэтчем; для 'unknown' ничего не пишем
 const budgetFitLabels = {
   overlap: 'Within budget',
+  // 'outside' — у заявок, созданных до появления порога в 10%
   outside: 'Outside budget',
 };
+
+// Рейтинг { average, count } одной строкой; у юзера без оценок — "No ratings yet"
+function formatRating(rating) {
+  return rating ? `★ ${rating.average.toFixed(1)} (${rating.count})` : 'No ratings yet';
+}
+
+// Ответ провайдера на заявку, как его видит кастомер
+const matchStatusLabels = {
+  pending: 'Waiting for answer',
+  accepted: 'Accepted',
+  declined: 'Declined',
+};
+
+// Для 'over' подпись зависит от процента превышения
+function getBudgetLabel(match) {
+  if (match.budgetFit === 'over') return `Over budget by ${match.budgetOverPercent}%`;
+  return budgetFitLabels[match.budgetFit];
+}
 
 // Карточка заявки: общие поля для кастомера и провайдера
 function RequestDetails({ item }) {
@@ -46,8 +66,33 @@ function RequestDetails({ item }) {
   );
 }
 
-// Подобранные AI провайдеры — кастомер видит всех троих и может открыть их профили
-function MatchedProviders({ item }) {
+// Кнопки ответа в карточке входящей заявки у провайдера. Пока работа не началась, решение можно менять
+function ProviderResponse({ item, onRespond }) {
+  const { status, dealId, workStarted } = item.myMatch;
+
+  return (
+    <div className='request-response'>
+      {workStarted ? (
+        <span className='request-status request-status--accepted'>Work in progress</span>
+      ) : (
+        <>
+          {status === 'pending' && <span className='request-status'>Waiting for your answer</span>}
+          {status === 'accepted' && <span className='request-status request-status--accepted'>You accepted</span>}
+          {status === 'declined' && <span className='request-status request-status--declined'>You declined</span>}
+          {status !== 'accepted' && <Btn text='Accept' className='request-accept btn-green' onClick={() => onRespond(item.id, 'accepted')} />}
+          {status !== 'declined' && <Btn text='Decline' className='request-decline' onClick={() => onRespond(item.id, 'declined')} />}
+        </>
+      )}
+      {/* Чат появляется, когда кастомер перешёл к сделке */}
+      {dealId && <Link to={`/chat/${dealId}`} className='request-chat-link'>Open chat</Link>}
+      {status === 'accepted' && !dealId && <span className='match-reason'>The customer has not opened the deal yet</span>}
+    </div>
+  );
+}
+
+// Подобранные AI провайдеры — кастомер видит всех троих, может открыть их профили
+// и перейти к сделке с теми, кто принял заявку
+function MatchedProviders({ item, onGoToDeal }) {
   // Заявки, созданные до появления мэтчинга
   if (!item.matches) return null;
 
@@ -65,9 +110,12 @@ function MatchedProviders({ item }) {
                 <Link to={`/profile/${match.providerId}`} className='match-name'>
                   {match.providerName || 'Provider'}
                 </Link>
+                <span className='rating'>{formatRating(match.providerRating)}</span>
                 {match.reason && <span className='match-reason'>{match.reason}</span>}
               </div>
-              {budgetFitLabels[match.budgetFit] && <span className={`match-budget match-budget--${match.budgetFit}`}>{budgetFitLabels[match.budgetFit]}</span>}
+              {getBudgetLabel(match) && <span className={`match-budget match-budget--${match.budgetFit}`}>{getBudgetLabel(match)}</span>}
+              <span className={`request-status request-status--${match.status}`}>{match.workStarted ? 'Work in progress' : matchStatusLabels[match.status]}</span>
+              {match.status === 'accepted' && <Btn text='Go to deal' className='request-deal btn-green' onClick={() => onGoToDeal(item.id, match.providerId)} />}
             </li>
           ))}
         </ul>
@@ -78,6 +126,7 @@ function MatchedProviders({ item }) {
 
 function Requests() {
   const { user, isLoading } = useAuth();
+  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [createError, setCreateError] = useState('');
   // Проверка и мэтчинг через AI занимают несколько секунд — блокируем кнопку, чтобы не отправить дважды
@@ -99,6 +148,29 @@ function Requests() {
   }, [user, isCustomer]);
 
   const [deleteError, setDeleteError] = useState('');
+  // Ошибки ответа провайдера и перехода к сделке
+  const [actionError, setActionError] = useState('');
+
+  const handleRespond = async (id, status) => {
+    setActionError('');
+    try {
+      await requestsApi.respondToRequest(id, status);
+      setRequests((prev) => prev.map((item) => (item.id === id ? { ...item, myMatch: { ...item.myMatch, status } } : item)));
+    } catch (err) {
+      setActionError(err.message);
+    }
+  };
+
+  // Создаёт чат (или находит уже созданный) и открывает его страницу
+  const handleGoToDeal = async (requestId, providerId) => {
+    setActionError('');
+    try {
+      const chat = await chatApi.getOrCreateChat({ requestId, providerId });
+      navigate(`/chat/${chat.id}`);
+    } catch (err) {
+      setActionError(err.message);
+    }
+  };
 
   const handleDelete = async (id) => {
     // Удаление необратимо — переспрашиваем
@@ -140,12 +212,8 @@ function Requests() {
       return;
     }
 
-    if (!frequency) {
-      setCreateError('Choose whether you need the service once or regularly');
-      return;
-    }
-
-    let schedule;
+    // Срок необязателен: без выбора (или с "Flexible") расписания нет
+    let schedule = null;
     if (frequency === 'once') {
       const dateFrom = formData.get('dateFrom');
       const dateTo = formData.get('dateTo') || null;
@@ -158,7 +226,7 @@ function Requests() {
         return;
       }
       schedule = { type: 'once', dateFrom, dateTo };
-    } else {
+    } else if (frequency === 'recurring') {
       const interval = Number(formData.get('interval'));
       const startDateValue = formData.get('startDate');
       const endDate = formData.get('endDate') || null;
@@ -210,6 +278,7 @@ function Requests() {
       <div className='requests contentContainer'>
         <Nav />
         <h1 className='title title--main'>Requests</h1>
+        {actionError && <p className='form-error'>{actionError}</p>}
         {requests.length === 0 ? (
           <p className='request-empty'>You have no requests at the moment</p>
         ) : (
@@ -219,11 +288,11 @@ function Requests() {
                 <p className='incoming-header'>
                   <span className='match-score'>{item.myMatch.score}%</span>
                   <span>
-                    Request matching your profile from <b>{item.customerName}</b>
+                    Request matching your profile from <b>{item.customerName}</b> <span className='rating'>{formatRating(item.customerRating)}</span>
                   </span>
                 </p>
-                {item.myMatch.reason && <p className='match-reason'>{item.myMatch.reason}</p>}
                 <RequestDetails item={item} />
+                <ProviderResponse item={item} onRespond={handleRespond} />
               </li>
             ))}
           </ul>
@@ -259,7 +328,7 @@ function Requests() {
             setFrequency(value);
             setStartDate('');
           }}
-          placeholder='How often do you need it?'
+          placeholder='When do you need it? (optional)'
         />
 
         {/* Один раз: окно дат, в которое нужно выполнить услугу; "по" необязательно — тогда конкретный день */}
@@ -309,6 +378,7 @@ function Requests() {
       <section className='request-history'>
         <h2 className='request-form-title'>My requests</h2>
         {deleteError && <p className='form-error'>{deleteError}</p>}
+        {actionError && <p className='form-error'>{actionError}</p>}
         {requests.length === 0 ? (
           <p className='request-empty'>You have no requests yet</p>
         ) : (
@@ -317,7 +387,7 @@ function Requests() {
               <li key={item.id} className='request-card'>
                 <Btn text='Delete' className='request-delete' onClick={() => handleDelete(item.id)} />
                 <RequestDetails item={item} />
-                <MatchedProviders item={item} />
+                <MatchedProviders item={item} onGoToDeal={handleGoToDeal} />
               </li>
             ))}
           </ul>

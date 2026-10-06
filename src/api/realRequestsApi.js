@@ -14,8 +14,12 @@ async function getIncomingRequests() {
   return request('/requests/incoming', { method: 'GET' });
 }
 
+async function respondToRequest(id, status) {
+  return request(`/requests/${encodeURIComponent(id)}/response`, { method: 'PUT', body: JSON.stringify({ status }) });
+}
+
 async function deleteRequest(id) {
   return request(`/requests/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
-export const realRequestsApi = { createRequest, getMyRequests, getIncomingRequests, deleteRequest };
+export const realRequestsApi = { createRequest, getMyRequests, getIncomingRequests, respondToRequest, deleteRequest };

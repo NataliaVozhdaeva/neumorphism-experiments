@@ -1,9 +1,12 @@
 // Расписание заявки:
+//   null                                                        — срок не указан (Flexible)
 //   { type: 'once', dateFrom, dateTo }                          — один раз в окне дат (dateTo может быть null — конкретный день)
 //   { type: 'recurring', interval, unit, startDate, endDate }  — "каждые N дней/недель/месяцев", endDate может быть null
 // Даты храним строками 'YYYY-MM-DD', как их отдаёт <input type='date'> — такие строки можно сравнивать напрямую
 
 export const FREQUENCY_OPTIONS = [
+  // Срок необязателен: кастомер может не знать, сколько времени нужно, — тогда расписания нет (null)
+  { value: 'flexible', label: 'Flexible' },
   { value: 'once', label: 'One-time' },
   { value: 'recurring', label: 'Recurring' },
 ];
@@ -25,7 +28,7 @@ function formatDate(isoDate) {
 }
 
 export function formatSchedule(schedule) {
-  if (!schedule) return 'Not set';
+  if (!schedule) return 'Flexible';
 
   if (schedule.type === 'once') {
     if (!schedule.dateTo || schedule.dateTo === schedule.dateFrom) return `Once, on ${formatDate(schedule.dateFrom)}`;

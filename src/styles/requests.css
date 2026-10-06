@@ -60,6 +60,8 @@
 
 .request-list {
   display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 16px;
 
   padding: 0;
@@ -240,6 +242,7 @@
   color: var(--green-text);
 }
 
+.match-budget--over,
 .match-budget--outside {
   color: var(--red);
 }
@@ -253,4 +256,56 @@
   margin: 0 0 8px;
 
   color: var(--green-text);
+}
+
+/* Ответ провайдера на заявку и статус ответа у кастомера */
+.request-response {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  margin-top: 16px;
+}
+
+.request-status {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--gray);
+}
+
+.request-status--accepted {
+  font-weight: bold;
+  color: var(--green-text);
+}
+
+.request-status--declined {
+  color: var(--red);
+}
+
+.request-accept,
+.request-decline,
+.request-deal {
+  padding: 4px 12px;
+  font-size: 12px;
+}
+
+.request-decline:hover {
+  color: var(--red);
+}
+
+.request-chat-link {
+  font-size: 12px;
+  color: var(--blue);
+}
+
+.match-item {
+  flex-wrap: wrap;
+}
+
+/* Рейтинг рядом с именем */
+.rating {
+  font-size: 12px;
+  font-weight: normal;
+  color: var(--gray);
 }

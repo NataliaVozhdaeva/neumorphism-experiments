@@ -5,26 +5,33 @@ import { formatSchedule } from '../utils/schedule';
 const TOP_COUNT = 3;
 // Ниже этого процента провайдер не считается подходящим — лучше никого, чем случайные трое
 const MIN_SCORE = 40;
+// Насколько провайдер может быть дороже бюджета: больше — не мэтч, меньше — штраф к оценке
+const MAX_OVER_BUDGET = 0.1;
+// Штраф в пунктах при максимальном допустимом превышении; растёт линейно от 0
+const MAX_BUDGET_PENALTY = 20;
 
-// Насколько бюджет заявки сходится с ценами провайдера:
-//   'overlap' — оба указаны и диапазоны пересекаются (самый высокий приоритет)
+// Насколько бюджет заявки сходится с ценами провайдера. Возвращает { fit, overBy }:
+//   'overlap' — оба указаны и провайдер укладывается в бюджет (диапазоны пересекаются
+//               или он дешевле — дешевле штрафовать не за что); высокий приоритет
 //   'unknown' — у кого-то не указано или валюты разные, сравнить нельзя
-//   'outside' — оба указаны, но не пересекаются (самый низкий приоритет)
+//   'over'    — минимальная цена провайдера выше максимума бюджета; overBy — на сколько
+//               (доля от бюджета, 0.05 = на 5% дороже); самый низкий приоритет
 function getBudgetFit(request, provider) {
   const requestHasBudget = request.budgetFrom != null || request.budgetTo != null;
   const providerHasPrice = provider.priceFrom != null || provider.priceTo != null;
-  if (!requestHasBudget || !providerHasPrice) return 'unknown';
-  if (request.currency && provider.currency && request.currency !== provider.currency) return 'unknown';
+  if (!requestHasBudget || !providerHasPrice) return { fit: 'unknown', overBy: 0 };
+  if (request.currency && provider.currency && request.currency !== provider.currency) return { fit: 'unknown', overBy: 0 };
 
   // Незаданная граница — диапазон открыт с этой стороны
-  const requestMin = request.budgetFrom ?? 0;
   const requestMax = request.budgetTo ?? Infinity;
   const providerMin = provider.priceFrom ?? 0;
-  const providerMax = provider.priceTo ?? Infinity;
-  return requestMin <= providerMax && providerMin <= requestMax ? 'overlap' : 'outside';
+  if (providerMin <= requestMax) return { fit: 'overlap', overBy: 0 };
+
+  // При бюджете "до 0" делить нельзя — любое превышение считаем бесконечным
+  return { fit: 'over', overBy: requestMax > 0 ? (providerMin - requestMax) / requestMax : Infinity };
 }
 
-const BUDGET_PRIORITY = { overlap: 2, unknown: 1, outside: 0 };
+const BUDGET_PRIORITY = { overlap: 2, unknown: 1, over: 0 };
 
 function buildPrompt(request, providers) {
   const providersForAi = providers.map((provider) => ({
@@ -40,8 +47,7 @@ function buildPrompt(request, providers) {
 Customer request:
 - Needed service: ${request.serviceDescription}
 - Location: ${request.location}
-- When: ${formatSchedule(request.schedule)}
-
+${request.schedule ? `- When: ${formatSchedule(request.schedule)}\n` : ''}
 Providers (JSON):
 ${JSON.stringify(providersForAi)}
 
@@ -77,14 +83,22 @@ export async function findMatches(request, providers) {
       .filter((match) => providersById.has(match.providerId) && Number.isFinite(match.score) && match.score >= MIN_SCORE)
       .map((match) => {
         const provider = providersById.get(match.providerId);
+        const { fit, overBy } = getBudgetFit(request, provider);
+        // Штраф за превышение бюджета: от 0 до MAX_BUDGET_PENALTY пунктов, линейно до порога
+        const penalty = Math.round((overBy / MAX_OVER_BUDGET) * MAX_BUDGET_PENALTY);
         return {
           providerId: provider.id,
           providerName: `${provider.firstName ?? ''} ${provider.lastName ?? ''}`.trim(),
-          score: Math.round(Math.min(match.score, 100)),
+          score: Math.round(Math.min(match.score, 100)) - penalty,
           reason: match.reason ?? '',
-          budgetFit: getBudgetFit(request, provider),
+          budgetFit: fit,
+          overBy,
         };
       })
+      // Слишком дорогие (дороже бюджета больше чем на MAX_OVER_BUDGET) — не мэтч; оценку проверяем уже со штрафом
+      .filter((match) => match.overBy <= MAX_OVER_BUDGET && match.score >= MIN_SCORE)
+      // Для интерфейса отдаём процент превышения целым числом, а не долю
+      .map(({ overBy, ...match }) => ({ ...match, budgetOverPercent: Math.round(overBy * 100) }))
       // Сначала те, у кого бюджет пересекается, потом без бюджета, потом не попавшие в бюджет; внутри — по проценту
       .sort((a, b) => BUDGET_PRIORITY[b.budgetFit] - BUDGET_PRIORITY[a.budgetFit] || b.score - a.score)
       .slice(0, TOP_COUNT)
