@@ -360,3 +360,45 @@
   background: var(--milk-white);
   border-radius: 12px;
 }
+
+.scan-card {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.scan-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.scan-actions .btn {
+  padding: 8px 12px 8px 16px;
+}
+
+.scan-industry {
+  margin: 0;
+  font-size: 14px;
+  color: var(--gray);
+}
+
+.booking-card {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.slots .btn {
+  padding: 8px 12px;
+}
+
+.book-btn {
+  padding: 12px 16px;
+}

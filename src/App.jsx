@@ -7,6 +7,8 @@ import Profile from './pages/profile';
 import PublicProfile from './pages/publicProfile';
 import Templates from './pages/templates';
 import Chat from './pages/chat';
+import Scan from './pages/scan';
+import Book from './pages/book';
 
 function App() {
   return (
@@ -18,6 +20,8 @@ function App() {
           <Route path='/help' element={<Help />} />
           <Route path='/profile' element={<Profile />} />
           <Route path='/profile/:id' element={<PublicProfile />} />
+          <Route path='/scan/:id' element={<Scan />} />
+          <Route path='/book/:id' element={<Book />} />
           <Route path='/templates' element={<Templates />} />
           <Route path='/chat/:id' element={<Chat />} />
         </Routes>

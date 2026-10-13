@@ -1,8 +1,8 @@
 // Тестовые провайдеры для мок-режима — на них проверяем AI-мэтчинг заявок.
 // id и email фиксированные, чтобы сидинг не создавал дубли при каждой загрузке.
 // Под любым из них можно залогиниться (пароль у всех один) и посмотреть входящие заявки
-const MOCK_PASSWORD = 'password123';
-const MOCK_CREATED_AT = '2026-01-15T10:00:00.000Z';
+export const MOCK_PASSWORD = 'password123';
+export const MOCK_CREATED_AT = '2026-01-15T10:00:00.000Z';
 
 export const MOCK_PROVIDERS = [
   {

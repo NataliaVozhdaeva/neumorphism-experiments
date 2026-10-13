@@ -346,12 +346,12 @@ function Profile() {
                 <dd>{new Date(user.createdAt).toLocaleDateString()}</dd>
               </div>
             </dl>
-            {/* QR ведёт на публичную страницу профиля — её можно открыть без логина.
-                Нужен только провайдеру, чтобы делиться профилем с кастомерами */}
+            {/* QR ведёт на страницу выбора действия (профиль / запись) — её можно открыть без логина.
+                Клик по QR имитирует сканирование. Нужен только провайдеру, чтобы делиться с кастомерами */}
             {user.role === 'provider' && (
               <div className='profile-qr-wrapper'>
-                <a className='profile-qr' href={`/profile/${user.id}`} target='_blank' rel='noreferrer' aria-label='Open your public profile'>
-                  <QRCodeSVG value={`${window.location.origin}/profile/${user.id}`} size={96} bgColor='transparent' fgColor='#3a5a4a' />
+                <a className='profile-qr' href={`/scan/${user.id}`} target='_blank' rel='noreferrer' aria-label='Open your public page'>
+                  <QRCodeSVG value={`${window.location.origin}/scan/${user.id}`} size={96} bgColor='transparent' fgColor='#3a5a4a' />
                 </a>
                 <span className='hint-text'>Save this QR code to share your profile with customers anytime</span>
               </div>

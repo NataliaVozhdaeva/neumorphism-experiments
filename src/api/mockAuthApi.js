@@ -1,5 +1,6 @@
 import { ApiError } from './apiError';
 import { MOCK_PROVIDERS } from './mockProviders';
+import { MOCK_CUSTOMERS } from './mockCustomers';
 
 // Мок "базы данных" поверх localStorage — переживает перезагрузку страницы,
 // но полностью изолирован от реального бэкенда
@@ -25,12 +26,12 @@ function delay(ms = NETWORK_DELAY_MS) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Добавляет тестовых провайдеров в "базу", если их там ещё нет.
+// Добавляет тестовых провайдеров и кастомеров в "базу", если их там ещё нет.
 // Проверяем по id, чтобы не трогать уже существующих юзеров и их правки
 export function seedMockProviders() {
   const users = readUsers();
   const existingIds = new Set(users.map((user) => user.id));
-  const missing = MOCK_PROVIDERS.filter((provider) => !existingIds.has(provider.id));
+  const missing = [...MOCK_PROVIDERS, ...MOCK_CUSTOMERS].filter((mockUser) => !existingIds.has(mockUser.id));
   if (missing.length > 0) {
     writeUsers([...users, ...missing]);
   }
