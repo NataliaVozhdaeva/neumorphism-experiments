@@ -2,7 +2,7 @@
   align-self: flex-start;
   margin-bottom: 8px;
 
-  font-size: 12px;
+  font-size: 14px;
   color: var(--blue);
 }
 
@@ -35,7 +35,7 @@
   flex: 1;
   min-width: 200px;
 
-  font-size: 12px;
+  font-size: 14px;
   color: var(--gray);
 }
 
@@ -46,7 +46,7 @@
 
 .chat-confirm {
   padding: 6px 14px;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .chat-messages {
@@ -96,7 +96,7 @@
 
 .chat-message-time {
   align-self: flex-end;
-  font-size: 10px;
+  font-size: 14px;
   color: var(--gray);
 }
 

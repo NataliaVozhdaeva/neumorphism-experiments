@@ -83,7 +83,7 @@
 
   padding: 4px 12px;
 
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .request-delete:hover {
@@ -105,7 +105,7 @@
 .request-row dt {
   min-width: 140px;
 
-  font-size: 12px;
+  font-size: 14px;
   line-height: 20px;
   color: var(--gray);
 }
@@ -125,7 +125,7 @@
 
 .budget-currency-change {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--blue);
 }
 
@@ -145,7 +145,7 @@
   flex-direction: column;
   gap: 4px;
 
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .request-date-label .request-date {
@@ -198,8 +198,18 @@
 
 .match-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
+}
+
+.match-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+
+  margin-top: 4px;
+  font-weight: 700;
 }
 
 .match-score {
@@ -229,13 +239,13 @@
 
 .match-reason {
   margin: 0;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--gray);
 }
 
 .match-budget {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .match-budget--overlap {
@@ -270,7 +280,7 @@
 
 .request-status {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--gray);
 }
 
@@ -285,9 +295,10 @@
 
 .request-accept,
 .request-decline,
+.request-undo,
 .request-deal {
   padding: 4px 12px;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .request-decline:hover {
@@ -295,17 +306,13 @@
 }
 
 .request-chat-link {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--blue);
-}
-
-.match-item {
-  flex-wrap: wrap;
 }
 
 /* Рейтинг рядом с именем */
 .rating {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: normal;
   color: var(--gray);
 }

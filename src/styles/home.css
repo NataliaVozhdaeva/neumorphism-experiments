@@ -30,7 +30,7 @@
   row-gap: 4px;
   min-width: 0;
 
-  font-size: 12px;
+  font-size: 14px;
   color: var(--gray);
 }
 
@@ -47,6 +47,6 @@
 
 .form-error {
   width: 100%;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--red);
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router';
 
 import { useAuth } from '../context/authContext';
@@ -66,21 +66,50 @@ function RequestDetails({ item }) {
   );
 }
 
-// Кнопки ответа в карточке входящей заявки у провайдера. Пока работа не началась, решение можно менять
+// Сколько времени у провайдера на отмену случайного выбора
+const UNDO_DELAY_MS = 15000;
+
+// Кнопки ответа в карточке входящей заявки у провайдера. После отправки ответа кнопки скрываются
 function ProviderResponse({ item, onRespond }) {
   const { status, dealId, workStarted } = item.myMatch;
+  // Выбор, который ещё не ушёл на сервер: его можно отменить в течение UNDO_DELAY_MS
+  const [choice, setChoice] = useState(null);
+  const timerRef = useRef(null);
+
+  // При уходе со страницы таймер сбрасываем, неотправленный выбор теряется
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  const handleChoose = (value) => {
+    setChoice(value);
+    timerRef.current = setTimeout(() => {
+      setChoice(null);
+      onRespond(item.id, value);
+    }, UNDO_DELAY_MS);
+  };
+
+  const handleUndo = () => {
+    clearTimeout(timerRef.current);
+    setChoice(null);
+  };
 
   return (
     <div className='request-response'>
       {workStarted ? (
         <span className='request-status request-status--accepted'>Work in progress</span>
+      ) : choice ? (
+        <>
+          {choice === 'accepted' && <span className='request-status request-status--accepted'>You accepted</span>}
+          {choice === 'declined' && <span className='request-status request-status--declined'>You declined</span>}
+          <Btn text='Undo' className='request-undo' onClick={handleUndo} />
+        </>
       ) : (
         <>
           {status === 'pending' && <span className='request-status'>Waiting for your answer</span>}
           {status === 'accepted' && <span className='request-status request-status--accepted'>You accepted</span>}
           {status === 'declined' && <span className='request-status request-status--declined'>You declined</span>}
-          {status !== 'accepted' && <Btn text='Accept' className='request-accept btn-green' onClick={() => onRespond(item.id, 'accepted')} />}
-          {status !== 'declined' && <Btn text='Decline' className='request-decline' onClick={() => onRespond(item.id, 'declined')} />}
+          {/* Кнопки только пока ответа нет; после отправки решение не меняется */}
+          {status === 'pending' && <Btn text='Accept' className='request-accept btn-green' onClick={() => handleChoose('accepted')} />}
+          {status === 'pending' && <Btn text='Decline' className='request-decline' onClick={() => handleChoose('declined')} />}
         </>
       )}
       {/* Чат появляется, когда кастомер перешёл к сделке */}
@@ -112,10 +141,13 @@ function MatchedProviders({ item, onGoToDeal }) {
                 </Link>
                 <span className='rating'>{formatRating(match.providerRating)}</span>
                 {match.reason && <span className='match-reason'>{match.reason}</span>}
+                {/* Бюджет, статус и действие — отдельной строкой под описанием */}
+                <div className='match-footer'>
+                  {getBudgetLabel(match) && <span className={`match-budget match-budget--${match.budgetFit}`}>{getBudgetLabel(match)}</span>}
+                  <span className={`request-status request-status--${match.status}`}>{match.workStarted ? 'Work in progress' : matchStatusLabels[match.status]}</span>
+                  {match.status === 'accepted' && <Btn text='Go to deal' className='request-deal btn-green' onClick={() => onGoToDeal(item.id, match.providerId)} />}
+                </div>
               </div>
-              {getBudgetLabel(match) && <span className={`match-budget match-budget--${match.budgetFit}`}>{getBudgetLabel(match)}</span>}
-              <span className={`request-status request-status--${match.status}`}>{match.workStarted ? 'Work in progress' : matchStatusLabels[match.status]}</span>
-              {match.status === 'accepted' && <Btn text='Go to deal' className='request-deal btn-green' onClick={() => onGoToDeal(item.id, match.providerId)} />}
             </li>
           ))}
         </ul>
