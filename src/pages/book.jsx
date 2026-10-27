@@ -44,7 +44,7 @@ function Book() {
   const handleBook = async () => {
     setError('');
     try {
-      setBooked(await bookingsApi.createBooking({ providerId: id, date, start: selected }));
+      setBooked(await bookingsApi.createBooking({ partnerId: id, date, start: selected }));
     } catch (err) {
       setError(err.message);
       setSelected('');

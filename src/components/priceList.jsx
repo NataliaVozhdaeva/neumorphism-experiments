@@ -6,7 +6,7 @@ import Input from './input';
 import Textarea from './textarea';
 import Btn from './button';
 
-// Прайс-лист провайдера: сохранённые услуги, каждую можно отредактировать или удалить
+// Прайс-лист партнёра: сохранённые услуги, каждую можно отредактировать или удалить
 // onAddClick — открыть форму добавления услуг; если не передан, кнопку не показываем
 function PriceList({ onAddClick }) {
   const { user, updateServices } = useAuth();

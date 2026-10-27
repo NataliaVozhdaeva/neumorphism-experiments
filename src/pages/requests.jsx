@@ -25,7 +25,7 @@ function formatRating(rating) {
   return rating ? `★ ${rating.average.toFixed(1)} (${rating.count})` : 'No ratings yet';
 }
 
-// Ответ провайдера на заявку, как его видит кастомер
+// Ответ партнёра на заявку, как его видит кастомер
 const matchStatusLabels = {
   pending: 'Waiting for answer',
   accepted: 'Accepted',
@@ -38,7 +38,7 @@ function getBudgetLabel(match) {
   return budgetFitLabels[match.budgetFit];
 }
 
-// Карточка заявки: общие поля для кастомера и провайдера
+// Карточка заявки: общие поля для кастомера и партнёра
 function RequestDetails({ item }) {
   return (
     <dl className='request-details'>
@@ -66,11 +66,11 @@ function RequestDetails({ item }) {
   );
 }
 
-// Сколько времени у провайдера на отмену случайного выбора
+// Сколько времени у партнёра на отмену случайного выбора
 const UNDO_DELAY_MS = 15000;
 
-// Кнопки ответа в карточке входящей заявки у провайдера. После отправки ответа кнопки скрываются
-function ProviderResponse({ item, onRespond }) {
+// Кнопки ответа в карточке входящей заявки у партнёра. После отправки ответа кнопки скрываются
+function PartnerResponse({ item, onRespond }) {
   const { status, dealId, workStarted } = item.myMatch;
   // Выбор, который ещё не ушёл на сервер: его можно отменить в течение UNDO_DELAY_MS
   const [choice, setChoice] = useState(null);
@@ -119,33 +119,33 @@ function ProviderResponse({ item, onRespond }) {
   );
 }
 
-// Подобранные AI провайдеры — кастомер видит всех троих, может открыть их профили
+// Подобранные AI партнёры — кастомер видит всех троих, может открыть их профили
 // и перейти к сделке с теми, кто принял заявку
-function MatchedProviders({ item, onGoToDeal }) {
+function MatchedPartners({ item, onGoToDeal }) {
   // Заявки, созданные до появления мэтчинга
   if (!item.matches) return null;
 
   return (
     <div className='request-matches'>
-      <h3 className='request-matches-title'>Matched providers</h3>
-      {item.matchingError && <p className='request-empty'>Couldn't find providers automatically: {item.matchingError}</p>}
-      {!item.matchingError && item.matches.length === 0 && <p className='request-empty'>No matching providers yet</p>}
+      <h3 className='request-matches-title'>Matched partners</h3>
+      {item.matchingError && <p className='request-empty'>Couldn't find partners automatically: {item.matchingError}</p>}
+      {!item.matchingError && item.matches.length === 0 && <p className='request-empty'>No matching partners yet</p>}
       {item.matches.length > 0 && (
         <ul className='match-list'>
           {item.matches.map((match) => (
-            <li key={match.providerId} className='match-item'>
+            <li key={match.partnerId} className='match-item'>
               <span className='match-score'>{match.score}%</span>
               <div className='match-info'>
-                <Link to={`/profile/${match.providerId}`} className='match-name'>
-                  {match.providerName || 'Provider'}
+                <Link to={`/profile/${match.partnerId}`} className='match-name'>
+                  {match.partnerName || 'Partner'}
                 </Link>
-                <span className='rating'>{formatRating(match.providerRating)}</span>
+                <span className='rating'>{formatRating(match.partnerRating)}</span>
                 {match.reason && <span className='match-reason'>{match.reason}</span>}
                 {/* Бюджет, статус и действие — отдельной строкой под описанием */}
                 <div className='match-footer'>
                   {getBudgetLabel(match) && <span className={`match-budget match-budget--${match.budgetFit}`}>{getBudgetLabel(match)}</span>}
                   <span className={`request-status request-status--${match.status}`}>{match.workStarted ? 'Work in progress' : matchStatusLabels[match.status]}</span>
-                  {match.status === 'accepted' && <Btn text='Go to deal' className='request-deal btn-green' onClick={() => onGoToDeal(item.id, match.providerId)} />}
+                  {match.status === 'accepted' && <Btn text='Go to deal' className='request-deal btn-green' onClick={() => onGoToDeal(item.id, match.partnerId)} />}
                 </div>
               </div>
             </li>
@@ -172,7 +172,7 @@ function Requests() {
   // Валюта берётся из профиля; поменять её можно на странице профиля
   const currency = user?.currency ?? FALLBACK_CURRENCY;
 
-  // Кастомеру — его заявки, провайдеру — заявки, в которых он попал в топ-3
+  // Кастомеру — его заявки, партнёру — заявки, в которых он попал в топ-3
   useEffect(() => {
     if (!user) return;
     const load = isCustomer ? requestsApi.getMyRequests : requestsApi.getIncomingRequests;
@@ -180,7 +180,7 @@ function Requests() {
   }, [user, isCustomer]);
 
   const [deleteError, setDeleteError] = useState('');
-  // Ошибки ответа провайдера и перехода к сделке
+  // Ошибки ответа партнёра и перехода к сделке
   const [actionError, setActionError] = useState('');
 
   const handleRespond = async (id, status) => {
@@ -194,10 +194,10 @@ function Requests() {
   };
 
   // Создаёт чат (или находит уже созданный) и открывает его страницу
-  const handleGoToDeal = async (requestId, providerId) => {
+  const handleGoToDeal = async (requestId, partnerId) => {
     setActionError('');
     try {
-      const chat = await chatApi.getOrCreateChat({ requestId, providerId });
+      const chat = await chatApi.getOrCreateChat({ requestId, partnerId });
       navigate(`/chat/${chat.id}`);
     } catch (err) {
       setActionError(err.message);
@@ -304,7 +304,7 @@ function Requests() {
     return <Navigate to='/' replace />;
   }
 
-  // Провайдер видит заявки, которые AI подобрал под его профиль
+  // Партнёр видит заявки, которые AI подобрал под его профиль
   if (!isCustomer) {
     return (
       <div className='requests contentContainer'>
@@ -324,7 +324,7 @@ function Requests() {
                   </span>
                 </p>
                 <RequestDetails item={item} />
-                <ProviderResponse item={item} onRespond={handleRespond} />
+                <PartnerResponse item={item} onRespond={handleRespond} />
               </li>
             ))}
           </ul>
@@ -400,7 +400,7 @@ function Requests() {
 
         {createError && <p className='form-error'>{createError}</p>}
         <Btn
-          text={isSubmitting ? 'Checking the request and finding providers…' : 'Create request'}
+          text={isSubmitting ? 'Checking the request and finding partners…' : 'Create request'}
           className='request-submit btn-green'
           type='submit'
           disabled={isSubmitting}
@@ -419,7 +419,7 @@ function Requests() {
               <li key={item.id} className='request-card'>
                 <Btn text='Delete' className='request-delete' onClick={() => handleDelete(item.id)} />
                 <RequestDetails item={item} />
-                <MatchedProviders item={item} onGoToDeal={handleGoToDeal} />
+                <MatchedPartners item={item} onGoToDeal={handleGoToDeal} />
               </li>
             ))}
           </ul>

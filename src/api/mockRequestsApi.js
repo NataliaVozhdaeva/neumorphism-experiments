@@ -53,9 +53,9 @@ function getMockRating(user) {
 }
 
 // Добавляет к мэтчу данные о сделке: id чата и началась ли работа. Статус по умолчанию 'pending' —
-// у заявок, созданных до появления ответов провайдера, его нет
+// у заявок, созданных до появления ответов партнёра, его нет
 function withDealInfo(match, requestId, chats) {
-  const chat = chats.find((item) => item.requestId === requestId && item.providerId === match.providerId);
+  const chat = chats.find((item) => item.requestId === requestId && item.partnerId === match.partnerId);
   return {
     ...match,
     status: match.status ?? 'pending',
@@ -106,13 +106,13 @@ async function createRequest({ location, serviceDescription, budgetFrom = null, 
     createdAt: new Date().toISOString(),
   };
 
-  // AI проверяет заявку и подбирает топ-3 провайдера. Если AI признал заявку бессмысленной (422) —
+  // AI проверяет заявку и подбирает топ-3 партнёра. Если AI признал заявку бессмысленной (422) —
   // пробрасываем ошибку и заявку не создаём. Любой другой сбой (лимит, сеть, нет ключа) не должен
   // терять заявку: сохраняем её без мэтчей и с текстом ошибки
-  const providers = readUsers().filter((candidate) => candidate.role === 'provider');
+  const partners = readUsers().filter((candidate) => candidate.role === 'partner');
   try {
-    // Каждый провайдер из топа ещё должен ответить на заявку — пока статус 'pending'
-    newRequest.matches = (await findMatches(newRequest, providers)).map((match) => ({ ...match, status: 'pending' }));
+    // Каждый партнёр из топа ещё должен ответить на заявку — пока статус 'pending'
+    newRequest.matches = (await findMatches(newRequest, partners)).map((match) => ({ ...match, status: 'pending' }));
     newRequest.matchingError = null;
   } catch (err) {
     if (err.status === 422) throw err;
@@ -137,13 +137,13 @@ async function getMyRequests() {
       ...item,
       matches: item.matches?.map((match) => ({
         ...withDealInfo(match, item.id, chats),
-        providerRating: getMockRating(users.find((candidate) => candidate.id === match.providerId)),
+        partnerRating: getMockRating(users.find((candidate) => candidate.id === match.partnerId)),
       })),
     }))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-// Заявки, в которых текущий провайдер попал в топ-3, — с его процентом мэтча и именем кастомера
+// Заявки, в которых текущий партнёр попал в топ-3, — с его процентом мэтча и именем кастомера
 async function getIncomingRequests() {
   await delay(100);
   const userId = requireSession();
@@ -151,13 +151,13 @@ async function getIncomingRequests() {
   const chats = readChats();
 
   return readRequests()
-    .filter((item) => item.matches?.some((match) => match.providerId === userId))
+    .filter((item) => item.matches?.some((match) => match.partnerId === userId))
     .map((item) => {
       const customer = users.find((candidate) => candidate.id === item.userId);
       return {
         ...item,
         myMatch: withDealInfo(
-          item.matches.find((match) => match.providerId === userId),
+          item.matches.find((match) => match.partnerId === userId),
           item.id,
           chats,
         ),
@@ -168,7 +168,7 @@ async function getIncomingRequests() {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-// Провайдер отвечает на заявку, в которой попал в топ: 'accepted' или 'declined'.
+// Партнёр отвечает на заявку, в которой попал в топ: 'accepted' или 'declined'.
 // Решение можно менять, пока работа не началась (обе стороны не подтвердили старт в чате)
 async function respondToRequest(id, status) {
   await delay();
@@ -180,13 +180,13 @@ async function respondToRequest(id, status) {
 
   const requests = readRequests();
   const target = requests.find((item) => item.id === id);
-  const match = target?.matches?.find((item) => item.providerId === userId);
+  const match = target?.matches?.find((item) => item.partnerId === userId);
   if (!target || !match) {
     throw new ApiError('Request not found', { status: 404 });
   }
 
   const chats = readChats();
-  const chat = chats.find((item) => item.requestId === id && item.providerId === userId);
+  const chat = chats.find((item) => item.requestId === id && item.partnerId === userId);
   if (chat?.workStartedAt) {
     throw new ApiError('Work has already started, the decision can no longer be changed', { status: 409 });
   }
@@ -196,7 +196,7 @@ async function respondToRequest(id, status) {
 
   // Если решение поменялось, прежние подтверждения старта работы теряют смысл
   if (chat) {
-    writeChats(chats.map((item) => (item.id === chat.id ? { ...item, confirmations: { customer: false, provider: false } } : item)));
+    writeChats(chats.map((item) => (item.id === chat.id ? { ...item, confirmations: { customer: false, partner: false } } : item)));
   }
 
   return { status };

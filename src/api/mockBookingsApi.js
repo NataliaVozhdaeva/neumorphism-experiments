@@ -39,24 +39,24 @@ function getSessionUser() {
   return user;
 }
 
-function getProvider(providerId) {
-  const provider = readUsers().find((candidate) => candidate.id === providerId && candidate.role === 'provider');
-  if (!provider) throw new ApiError('Provider not found', { status: 404 });
-  return provider;
+function getPartner(partnerId) {
+  const partner = readUsers().find((candidate) => candidate.id === partnerId && candidate.role === 'partner');
+  if (!partner) throw new ApiError('Partner not found', { status: 404 });
+  return partner;
 }
 
-// Свободные слоты провайдера на дату — ['09:00', '10:00', ...]
-async function getSlots(providerId, date) {
+// Свободные слоты партнёра на дату — ['09:00', '10:00', ...]
+async function getSlots(partnerId, date) {
   await delay(200);
 
-  const provider = getProvider(providerId);
-  const availability = provider.availability ?? DEFAULT_AVAILABILITY;
-  const bookings = readBookings().filter((booking) => booking.providerId === providerId);
+  const partner = getPartner(partnerId);
+  const availability = partner.availability ?? DEFAULT_AVAILABILITY;
+  const bookings = readBookings().filter((booking) => booking.partnerId === partnerId);
 
   return getAvailableSlots(availability, bookings, date);
 }
 
-async function createBooking({ providerId, date, start, note = '' }) {
+async function createBooking({ partnerId, date, start, note = '' }) {
   await delay();
 
   const customer = getSessionUser();
@@ -64,14 +64,14 @@ async function createBooking({ providerId, date, start, note = '' }) {
     throw new ApiError('Only customers can book appointments', { status: 403 });
   }
 
-  const provider = getProvider(providerId);
-  const availability = provider.availability ?? DEFAULT_AVAILABILITY;
+  const partner = getPartner(partnerId);
+  const availability = partner.availability ?? DEFAULT_AVAILABILITY;
   const bookings = readBookings();
 
   // Слот перепроверяем при создании: пока кастомер выбирал, его мог занять другой
   const freeSlots = getAvailableSlots(
     availability,
-    bookings.filter((booking) => booking.providerId === providerId),
+    bookings.filter((booking) => booking.partnerId === partnerId),
     date,
   );
   if (!freeSlots.includes(start)) {
@@ -80,7 +80,7 @@ async function createBooking({ providerId, date, start, note = '' }) {
 
   const newBooking = {
     id: crypto.randomUUID(),
-    providerId,
+    partnerId,
     customerId: customer.id,
     customerName: `${customer.firstName ?? ''} ${customer.lastName ?? ''}`.trim() || customer.email,
     date,
@@ -95,19 +95,19 @@ async function createBooking({ providerId, date, start, note = '' }) {
   return newBooking;
 }
 
-// Записи текущего юзера: у кастомера — его записи, у провайдера — записи к нему
+// Записи текущего юзера: у кастомера — его записи, у партнёра — записи к нему
 async function getMyBookings() {
   await delay();
 
   const user = getSessionUser();
-  const field = user.role === 'provider' ? 'providerId' : 'customerId';
+  const field = user.role === 'partner' ? 'partnerId' : 'customerId';
 
   return readBookings()
     .filter((booking) => booking[field] === user.id)
     .sort((a, b) => `${a.date} ${a.start}`.localeCompare(`${b.date} ${b.start}`));
 }
 
-// Отменить может и кастомер, и провайдер; слот при этом снова становится свободным
+// Отменить может и кастомер, и партнёр; слот при этом снова становится свободным
 async function cancelBooking(id) {
   await delay();
 
@@ -116,7 +116,7 @@ async function cancelBooking(id) {
   const index = bookings.findIndex((booking) => booking.id === id);
 
   if (index === -1) throw new ApiError('Booking not found', { status: 404 });
-  if (bookings[index].customerId !== user.id && bookings[index].providerId !== user.id) {
+  if (bookings[index].customerId !== user.id && bookings[index].partnerId !== user.id) {
     throw new ApiError('Not allowed', { status: 403 });
   }
 

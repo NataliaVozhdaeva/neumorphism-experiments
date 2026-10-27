@@ -22,7 +22,7 @@ const contactLabels = {
 
 const roleLabels = {
   customer: 'Customer',
-  provider: 'Provider',
+  partner: 'Partner',
 };
 
 const contactOptions = [
@@ -32,7 +32,7 @@ const contactOptions = [
 
 const roleOptions = [
   { value: 'customer', label: 'Customer' },
-  { value: 'provider', label: 'Provider' },
+  { value: 'partner', label: 'Partner' },
 ];
 
 function buildEditForm(user) {
@@ -100,7 +100,7 @@ function Profile() {
     }
 
     let roleData = {};
-    if (editForm.role === 'provider') {
+    if (editForm.role === 'partner') {
       const activities = editForm.activities
         .split(',')
         .map((item) => item.trim())
@@ -109,7 +109,7 @@ function Profile() {
         .split(',')
         .map((item) => item.trim())
         .filter(Boolean);
-      // Цена необязательна: пустое поле сохраняем как null, а не как 0
+
       const priceFrom = editForm.priceFrom !== '' ? Number(editForm.priceFrom) : null;
       const priceTo = editForm.priceTo !== '' ? Number(editForm.priceTo) : null;
 
@@ -125,7 +125,6 @@ function Profile() {
         setEditError('Specify at least one location');
         return;
       }
-      // Сравниваем границы только если указаны обе
       if (priceFrom !== null && priceTo !== null && priceFrom > priceTo) {
         setEditError('Minimum price cannot be greater than maximum price');
         return;
@@ -141,7 +140,6 @@ function Profile() {
         firstName: editForm.firstName.trim(),
         lastName: editForm.lastName.trim(),
         role: editForm.role,
-        // Пустую валюту не отправляем, чтобы не помешать её определению по IP
         ...(editForm.currency && { currency: editForm.currency }),
         ...roleData,
       });
@@ -186,8 +184,8 @@ function Profile() {
           </div>
 
           <div className='profile-card additional-info'>
-            {/* Подсказка нужна только провайдерам — в режиме редактирования смотрим на выбранную в форме роль */}
-            {editForm.role === 'provider' && (
+            {/* Подсказка нужна только партнёрам — в режиме редактирования смотрим на выбранную в форме роль */}
+            {editForm.role === 'partner' && (
               <div className='profile-hint'>
                 <span className='info-icon icon btn'>
                   <i>i</i>
@@ -265,7 +263,7 @@ function Profile() {
               </label>
             )}
 
-            {editForm.role === 'provider' && (
+            {editForm.role === 'partner' && (
               <div className='role-fields'>
                 <label className='field-label field-label--inline'>
                   <span>Industry</span>
@@ -347,8 +345,8 @@ function Profile() {
               </div>
             </dl>
             {/* QR ведёт на страницу выбора действия (профиль / запись) — её можно открыть без логина.
-                Клик по QR имитирует сканирование. Нужен только провайдеру, чтобы делиться с кастомерами */}
-            {user.role === 'provider' && (
+                Клик по QR имитирует сканирование. Нужен только партнёру, чтобы делиться с кастомерами */}
+            {user.role === 'partner' && (
               <div className='profile-qr-wrapper'>
                 <a className='profile-qr' href={`/scan/${user.id}`} target='_blank' rel='noreferrer' aria-label='Open your public page'>
                   <QRCodeSVG value={`${window.location.origin}/scan/${user.id}`} size={96} bgColor='transparent' fgColor='#3a5a4a' />
@@ -362,8 +360,8 @@ function Profile() {
           <div className='profile-card additional-info'>
             <Btn text='Edit' className='accountBtn accountBtn-edit btn-green' onClick={startEditing} />
 
-            {/* Подсказка нужна только провайдерам */}
-            {user.role === 'provider' && (
+            {/* Подсказка нужна только партнёрам */}
+            {user.role === 'partner' && (
               <div className='profile-hint'>
                 <span className='info-icon icon btn'>
                   <i>i</i>
@@ -399,7 +397,7 @@ function Profile() {
                   <dd>{user.phone || 'Not set'}</dd>
                 </div>
               )}
-              {user.role === 'provider' && (
+              {user.role === 'partner' && (
                 <>
                   <div className='profile-row'>
                     <dt>Industry</dt>
@@ -422,8 +420,8 @@ function Profile() {
             </dl>
           </div>
 
-          {/* Услуги провайдера: прайс-лист, форма добавления открывается по кнопке в нём */}
-          {user.role === 'provider' && (
+          {/* Услуги партнёра: прайс-лист, форма добавления открывается по кнопке в нём */}
+          {user.role === 'partner' && (
             <>
               <PriceList onAddClick={isServicesFormOpen ? undefined : () => setIsServicesFormOpen(true)} />
               {isServicesFormOpen && <ServicesForm onClose={() => setIsServicesFormOpen(false)} />}

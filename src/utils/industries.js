@@ -1,5 +1,5 @@
-// Фиксированный список индустрий провайдера: точные значения удобно сравнивать
-// и по ним можно отфильтровать провайдеров до отправки в AI
+// Фиксированный список индустрий партнёра: точные значения удобно сравнивать
+// и по ним можно отфильтровать партнёров до отправки в AI
 const INDUSTRIES = [
   { value: 'software-development', label: 'Software development' },
   { value: 'construction', label: 'Construction & renovation' },
@@ -15,7 +15,7 @@ const INDUSTRIES = [
 
 export const industryOptions = INDUSTRIES;
 
-// Человекочитаемое название; у старых провайдеров индустрии нет
+// Человекочитаемое название; у старых партнёров индустрии нет
 export function getIndustryLabel(value) {
   return INDUSTRIES.find((industry) => industry.value === value)?.label ?? 'Not set';
 }

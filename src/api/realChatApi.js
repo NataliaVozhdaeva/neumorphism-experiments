@@ -1,8 +1,8 @@
 import { request } from './realAuthApi';
 
 // Реализация на реальном бэкенде — интерфейс идентичен mockChatApi.js
-async function getOrCreateChat({ requestId, providerId }) {
-  return request('/chats', { body: JSON.stringify({ requestId, providerId }) });
+async function getOrCreateChat({ requestId, partnerId }) {
+  return request('/chats', { body: JSON.stringify({ requestId, partnerId }) });
 }
 
 async function getChat(chatId) {

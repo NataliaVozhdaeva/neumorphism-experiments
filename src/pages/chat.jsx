@@ -11,7 +11,7 @@ import '../styles/chat.css';
 // В моках нет реального времени — новые сообщения собеседника подтягиваем опросом
 const POLL_INTERVAL_MS = 3000;
 
-// Чат сделки между кастомером и провайдером. Открывается по кнопке "Go to deal" / "Open chat" на странице заявок
+// Чат сделки между кастомером и партнёром. Открывается по кнопке "Go to deal" / "Open chat" на странице заявок
 function Chat() {
   const { id } = useParams();
   const { user, isLoading } = useAuth();
@@ -103,7 +103,7 @@ function Chat() {
     );
   }
 
-  const otherRole = chat.myRole === 'customer' ? 'provider' : 'customer';
+  const otherRole = chat.myRole === 'customer' ? 'partner' : 'customer';
   const iConfirmed = chat.confirmations[chat.myRole];
   const otherConfirmed = chat.confirmations[otherRole];
 
@@ -116,7 +116,7 @@ function Chat() {
       </Link>
       {chat.serviceDescription && <p className='chat-service'>{chat.serviceDescription}</p>}
 
-      {/* Старт работы подтверждают обе стороны; после этого решение провайдера по заявке менять нельзя */}
+      {/* Старт работы подтверждают обе стороны; после этого решение партнёра по заявке менять нельзя */}
       <div className='chat-work'>
         {chat.workStartedAt ? (
           <span className='chat-work-status chat-work-status--started'>Work started on {new Date(chat.workStartedAt).toLocaleDateString()}</span>
@@ -139,7 +139,7 @@ function Chat() {
         )}
       </div>
 
-      {!chat.isActive && <p className='form-error'>The provider has declined this request, the chat is closed</p>}
+      {!chat.isActive && <p className='form-error'>The partner has declined this request, the chat is closed</p>}
 
       <ul className='chat-messages'>
         {chat.messages.length === 0 && <li className='chat-empty'>No messages yet — say hello</li>}

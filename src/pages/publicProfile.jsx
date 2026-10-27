@@ -10,7 +10,7 @@ import '../styles/profile.css';
 
 const roleLabels = {
   customer: 'Customer',
-  provider: 'Provider',
+  partner: 'Partner',
 };
 
 // Публичная страница профиля — сюда ведёт QR-код, логин не нужен
@@ -74,7 +74,7 @@ function PublicProfile() {
           </dl>
         </div>
 
-        {profile.role === 'provider' && (
+        {profile.role === 'partner' && (
           <>
             <div className='profile-card additional-info'>
               <dl className='profile-details'>

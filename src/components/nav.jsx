@@ -8,12 +8,16 @@ const links = [
   { to: '/requests', label: 'Requests' },
   { to: '/help', label: 'Help' },
   { to: '/profile', label: 'Profile' },
+  { to: '/schedule', label: 'Schedule', role: 'partner' },
   { to: '/templates', label: 'Templates' },
 ];
 
 function Nav() {
   const { user } = useAuth();
-  const visibleLinks = links.filter(({ to }) => to !== '/profile' || user);
+  const visibleLinks = links.filter(({ to, role }) => {
+    if (to === '/profile' && !user) return false;
+    return !role || user?.role === role;
+  });
 
   return (
     <nav className='pages-navigation'>

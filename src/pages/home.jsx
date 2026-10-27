@@ -43,7 +43,7 @@ function Home() {
     }
 
     let roleData = {};
-    if (role === 'provider') {
+    if (role === 'partner') {
       const activities = (formData.get('activities') ?? '')
         .split(',')
         .map((item) => item.trim())
@@ -94,8 +94,8 @@ function Home() {
       setContact('');
       setRole('');
       setIndustry('');
-      // Провайдера сразу ведём в профиль — заполнить услуги и цены
-      if (role === 'provider') navigate('/profile');
+      // Партнёра сразу ведём в профиль — заполнить услуги и цены
+      if (role === 'partner') navigate('/profile');
     } catch (err) {
       setCreateError(err.message);
     }
@@ -124,13 +124,13 @@ function Home() {
 
   const roleOptions = [
     { value: 'customer', label: 'Customer' },
-    { value: 'provider', label: 'Provider' },
+    { value: 'partner', label: 'Partner' },
   ];
 
   return (
     <div className='homepage contentContainer'>
       <Nav />
-      <h1 className='title title--main'>We are here to help you to find the best provider for cervice you need</h1>
+      <h1 className='title title--main'>We are here to help you to find the best partner for cervice you need</h1>
 
       {!user && (
         <>
@@ -163,7 +163,7 @@ function Home() {
               {contact === 'phone' && <Input className='phone' type='tel' name='phone' placeholder='Phone number' required />}
               <Select className='select-role' options={roleOptions} value={role} onChange={setRole} placeholder='I am a...' />
 
-              {role === 'provider' && (
+              {role === 'partner' && (
                 <div className='role-fields'>
                   <Select className='select-industry' options={industryOptions} value={industry} onChange={setIndustry} placeholder='Industry' />
                   <Textarea

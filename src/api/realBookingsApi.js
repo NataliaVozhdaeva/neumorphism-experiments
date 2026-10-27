@@ -1,12 +1,12 @@
 import { request } from './realAuthApi';
 
 // Реализация на реальном бэкенде — интерфейс идентичен mockBookingsApi.js
-async function getSlots(providerId, date) {
-  return request(`/providers/${encodeURIComponent(providerId)}/slots?date=${encodeURIComponent(date)}`, { method: 'GET' });
+async function getSlots(partnerId, date) {
+  return request(`/partners/${encodeURIComponent(partnerId)}/slots?date=${encodeURIComponent(date)}`, { method: 'GET' });
 }
 
-async function createBooking({ providerId, date, start, note = '' }) {
-  return request('/bookings', { body: JSON.stringify({ providerId, date, start, note }) });
+async function createBooking({ partnerId, date, start, note = '' }) {
+  return request('/bookings', { body: JSON.stringify({ partnerId, date, start, note }) });
 }
 
 async function getMyBookings() {

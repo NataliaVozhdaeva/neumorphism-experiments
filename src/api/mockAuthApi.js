@@ -1,12 +1,12 @@
 import { ApiError } from './apiError';
-import { MOCK_PROVIDERS } from './mockProviders';
+import { MOCK_PARTNERS } from './mockPartners';
 import { MOCK_CUSTOMERS } from './mockCustomers';
 
 // Мок "базы данных" поверх localStorage — переживает перезагрузку страницы,
 // но полностью изолирован от реального бэкенда
 const DB_KEY = 'mockDb_users';
 // Сессия в sessionStorage, а не в localStorage: у каждой вкладки своя, так что в двух вкладках
-// можно сидеть под разными юзерами (кастомер и провайдер) при общей "базе"
+// можно сидеть под разными юзерами (кастомер и партнёр) при общей "базе"
 const SESSION_KEY = 'mockDb_session';
 const NETWORK_DELAY_MS = 400;
 
@@ -26,12 +26,12 @@ function delay(ms = NETWORK_DELAY_MS) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Добавляет тестовых провайдеров и кастомеров в "базу", если их там ещё нет.
+// Добавляет тестовых партнёров и кастомеров в "базу", если их там ещё нет.
 // Проверяем по id, чтобы не трогать уже существующих юзеров и их правки
-export function seedMockProviders() {
+export function seedMockPartners() {
   const users = readUsers();
   const existingIds = new Set(users.map((user) => user.id));
-  const missing = [...MOCK_PROVIDERS, ...MOCK_CUSTOMERS].filter((mockUser) => !existingIds.has(mockUser.id));
+  const missing = [...MOCK_PARTNERS, ...MOCK_CUSTOMERS].filter((mockUser) => !existingIds.has(mockUser.id));
   if (missing.length > 0) {
     writeUsers([...users, ...missing]);
   }
@@ -66,13 +66,13 @@ async function register({
   if (password !== repeatPassword) {
     throw new ApiError('Passwords do not match', { status: 422, field: 'repeatPassword' });
   }
-  if (role !== 'customer' && role !== 'provider') {
-    throw new ApiError('Role must be either "customer" or "provider"', { status: 422, field: 'role' });
+  if (role !== 'customer' && role !== 'partner') {
+    throw new ApiError('Role must be either "customer" or "partner"', { status: 422, field: 'role' });
   }
   if (contact === 'phone' && !phone) {
     throw new ApiError('Phone number is required', { status: 422, field: 'phone' });
   }
-  if (role === 'provider' && !industry) {
+  if (role === 'partner' && !industry) {
     throw new ApiError('Industry is required', { status: 422, field: 'industry' });
   }
 
@@ -91,8 +91,8 @@ async function register({
     firstName,
     lastName,
     role,
-    // Поля, специфичные для provider — у customer своих полей в профиле нет
-    ...(role === 'provider' && { industry, activities, locations, priceFrom, priceTo }),
+    // Поля, специфичные для partner — у customer своих полей в профиле нет
+    ...(role === 'partner' && { industry, activities, locations, priceFrom, priceTo }),
     createdAt: new Date().toISOString(),
   };
 
@@ -149,13 +149,13 @@ async function updateProfile(updates) {
     ...rest
   } = updates;
 
-  if (role !== 'customer' && role !== 'provider') {
-    throw new ApiError('Role must be either "customer" or "provider"', { status: 422, field: 'role' });
+  if (role !== 'customer' && role !== 'partner') {
+    throw new ApiError('Role must be either "customer" or "partner"', { status: 422, field: 'role' });
   }
   if (contact === 'phone' && !phone) {
     throw new ApiError('Phone number is required', { status: 422, field: 'phone' });
   }
-  if (role === 'provider' && !industry) {
+  if (role === 'partner' && !industry) {
     throw new ApiError('Industry is required', { status: 422, field: 'industry' });
   }
 
@@ -172,9 +172,9 @@ async function updateProfile(updates) {
     locations: undefined,
     priceFrom: undefined,
     priceTo: undefined,
-    ...(role === 'provider' && { industry, activities, locations, priceFrom, priceTo }),
-    // Услуги редактируются отдельным методом; при уходе из провайдеров — сбрасываем
-    ...(role !== 'provider' && { services: undefined }),
+    ...(role === 'partner' && { industry, activities, locations, priceFrom, priceTo }),
+    // Услуги редактируются отдельным методом; при уходе из партнёров — сбрасываем
+    ...(role !== 'partner' && { services: undefined }),
   };
 
   users[index] = updatedUser;
@@ -200,7 +200,7 @@ async function updateCurrency(currency) {
   return toPublicUser(users[index]);
 }
 
-// Услуги провайдера сохраняются отдельно от остального профиля
+// Услуги партнёра сохраняются отдельно от остального профиля
 async function updateServices(services) {
   await delay();
 
@@ -210,8 +210,8 @@ async function updateServices(services) {
   if (!sessionId || index === -1) {
     throw new ApiError('Not authenticated', { status: 401 });
   }
-  if (users[index].role !== 'provider') {
-    throw new ApiError('Only providers can have services', { status: 403 });
+  if (users[index].role !== 'partner') {
+    throw new ApiError('Only partners can have services', { status: 403 });
   }
   if (services.some((service) => !service.name || service.price == null)) {
     throw new ApiError('Each service needs both a name and a price', { status: 422, field: 'services' });
@@ -236,7 +236,7 @@ function toPublicProfile(user) {
     ...(user.contact === 'phone' && { phone: user.phone }),
     currency: user.currency ?? null,
     createdAt: user.createdAt,
-    ...(user.role === 'provider' && {
+    ...(user.role === 'partner' && {
       industry: user.industry ?? null,
       activities: user.activities,
       locations: user.locations,

@@ -1,6 +1,6 @@
 import { ApiError } from './apiError';
 
-// Мок "таблицы" чатов в localStorage. Один чат = одна сделка между кастомером и провайдером по конкретной заявке.
+// Мок "таблицы" чатов в localStorage. Один чат = одна сделка между кастомером и партнёром по конкретной заявке.
 // Сессия, заявки и юзеры лежат в "таблицах" других моков — читаем их напрямую, как делал бы бэкенд
 const DB_KEY = 'mockDb_chats';
 // Сессия в sessionStorage — у каждой вкладки своя (см. mockAuthApi)
@@ -43,16 +43,16 @@ function findChatForUser(chats, chatId, userId) {
   if (!chat) {
     throw new ApiError('Chat not found', { status: 404 });
   }
-  if (chat.customerId !== userId && chat.providerId !== userId) {
+  if (chat.customerId !== userId && chat.partnerId !== userId) {
     throw new ApiError('You are not a participant of this chat', { status: 403 });
   }
-  return { chat, role: chat.customerId === userId ? 'customer' : 'provider' };
+  return { chat, role: chat.customerId === userId ? 'customer' : 'partner' };
 }
 
-// Провайдер всё ещё "принял" заявку? Если он передумал (отклонил), чат закрывается — писать и подтверждать нельзя
+// Партнёр всё ещё "принял" заявку? Если он передумал (отклонил), чат закрывается — писать и подтверждать нельзя
 function isDealActive(chat) {
   const request = readJson(REQUESTS_KEY).find((item) => item.id === chat.requestId);
-  const match = request?.matches?.find((item) => item.providerId === chat.providerId);
+  const match = request?.matches?.find((item) => item.partnerId === chat.partnerId);
   return match?.status === 'accepted';
 }
 
@@ -60,7 +60,7 @@ function isDealActive(chat) {
 function toChatView(chat, role) {
   const users = readJson(USERS_KEY);
   const request = readJson(REQUESTS_KEY).find((item) => item.id === chat.requestId);
-  const otherId = role === 'customer' ? chat.providerId : chat.customerId;
+  const otherId = role === 'customer' ? chat.partnerId : chat.customerId;
 
   return {
     id: chat.id,
@@ -76,8 +76,8 @@ function toChatView(chat, role) {
   };
 }
 
-// Чат создаётся только при взаимном мэтче: провайдер принял заявку, а кастомер нажал "перейти к сделке"
-async function getOrCreateChat({ requestId, providerId }) {
+// Чат создаётся только при взаимном мэтче: партнёр принял заявку, а кастомер нажал "перейти к сделке"
+async function getOrCreateChat({ requestId, partnerId }) {
   await delay();
   const userId = requireSession();
 
@@ -88,22 +88,22 @@ async function getOrCreateChat({ requestId, providerId }) {
   if (request.userId !== userId) {
     throw new ApiError('Only the author of the request can start a deal', { status: 403 });
   }
-  const match = request.matches?.find((item) => item.providerId === providerId);
+  const match = request.matches?.find((item) => item.partnerId === partnerId);
   if (match?.status !== 'accepted') {
-    throw new ApiError('The provider has not accepted this request', { status: 403 });
+    throw new ApiError('The partner has not accepted this request', { status: 403 });
   }
 
   const chats = readJson(DB_KEY);
-  let chat = chats.find((item) => item.requestId === requestId && item.providerId === providerId);
+  let chat = chats.find((item) => item.requestId === requestId && item.partnerId === partnerId);
   if (!chat) {
     chat = {
       id: crypto.randomUUID(),
       requestId,
       customerId: userId,
-      providerId,
+      partnerId,
       messages: [],
       // Работа считается начатой, когда подтвердили обе стороны
-      confirmations: { customer: false, provider: false },
+      confirmations: { customer: false, partner: false },
       workStartedAt: null,
       createdAt: new Date().toISOString(),
     };
@@ -133,7 +133,7 @@ async function sendMessage(chatId, text) {
   const chats = readJson(DB_KEY);
   const { chat, role } = findChatForUser(chats, chatId, userId);
   if (!isDealActive(chat)) {
-    throw new ApiError('The provider has declined this request, the chat is closed', { status: 403 });
+    throw new ApiError('The partner has declined this request, the chat is closed', { status: 403 });
   }
 
   const updatedChat = {
@@ -146,7 +146,7 @@ async function sendMessage(chatId, text) {
 }
 
 // Подтвердить (или отозвать подтверждение) начала работы. Когда подтвердили оба — фиксируем время старта,
-// после этого решение провайдера по заявке уже нельзя менять, а подтверждение отозвать нельзя
+// после этого решение партнёра по заявке уже нельзя менять, а подтверждение отозвать нельзя
 async function setWorkConfirmation(chatId, confirmed) {
   await delay();
   const userId = requireSession();
@@ -157,14 +157,14 @@ async function setWorkConfirmation(chatId, confirmed) {
     throw new ApiError('Work has already started', { status: 409 });
   }
   if (!isDealActive(chat)) {
-    throw new ApiError('The provider has declined this request, the chat is closed', { status: 403 });
+    throw new ApiError('The partner has declined this request, the chat is closed', { status: 403 });
   }
 
   const confirmations = { ...chat.confirmations, [role]: Boolean(confirmed) };
   const updatedChat = {
     ...chat,
     confirmations,
-    workStartedAt: confirmations.customer && confirmations.provider ? new Date().toISOString() : null,
+    workStartedAt: confirmations.customer && confirmations.partner ? new Date().toISOString() : null,
   };
   writeChats(chats.map((item) => (item.id === chatId ? updatedChat : item)));
 

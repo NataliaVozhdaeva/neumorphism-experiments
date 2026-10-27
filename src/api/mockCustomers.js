@@ -1,8 +1,8 @@
-import { MOCK_PASSWORD, MOCK_CREATED_AT } from './mockProviders';
+import { MOCK_PASSWORD, MOCK_CREATED_AT } from './mockPartners';
 
 // Тестовые кастомеры для мок-режима — чтобы не регистрироваться каждый раз.
 // id и email фиксированные, чтобы сидинг не создавал дубли при каждой загрузке.
-// Пароль у всех такой же, как у тестовых провайдеров
+// Пароль у всех такой же, как у тестовых партнёров
 export const MOCK_CUSTOMERS = [
   {
     id: 'mock-customer-anna',

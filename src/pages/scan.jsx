@@ -8,7 +8,7 @@ import Nav from '../components/nav';
 import { getIndustryLabel } from '../utils/industries';
 import '../styles/profile.css';
 
-// Страница, на которую ведёт QR-код: краткая карточка провайдера и выбор действия.
+// Страница, на которую ведёт QR-код: краткая карточка партнёра и выбор действия.
 // Логин не нужен — как и на публичном профиле
 function Scan() {
   const { id } = useParams();
@@ -45,14 +45,14 @@ function Scan() {
   return (
     <div className='profile contentContainer'>
       <Nav />
-      <h1 className='title title--main'>{fullName || 'Provider'}</h1>
+      <h1 className='title title--main'>{fullName || 'Partner'}</h1>
 
       <div className='content'>
         <div className='profile-card scan-card'>
           <Avatar email={profile.firstName} size={72} />
-          {profile.role === 'provider' && <p className='scan-industry'>{getIndustryLabel(profile.industry)}</p>}
+          {profile.role === 'partner' && <p className='scan-industry'>{getIndustryLabel(profile.industry)}</p>}
           <div className='scan-actions'>
-            <Btn text='Learn more about provider' onClick={() => navigate(`/profile/${id}`)} />
+            <Btn text='Learn more about partner' onClick={() => navigate(`/profile/${id}`)} />
             <Btn text='Book appointment' className='btn-green' onClick={() => navigate(`/book/${id}`)} />
           </div>
         </div>
