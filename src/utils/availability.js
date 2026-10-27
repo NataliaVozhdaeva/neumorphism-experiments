@@ -60,7 +60,7 @@ export function getAvailableSlots(availability, bookings, dateISO, now = new Dat
       const end = start + slotMinutes;
       const isPast = start <= nowMinutes;
       const isBusy = busy.some((booking) => start < booking.end && end > booking.start);
-      const isBlocked = blockedStarts.includes(toTime(start));
+      const isBlocked = blockedSlots.includes(toTime(start));
 
       if (!isPast && !isBusy && !isBlocked) slots.push(toTime(start));
     }

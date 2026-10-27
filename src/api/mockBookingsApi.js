@@ -28,6 +28,10 @@ function readUsers() {
   }
 }
 
+function writeUsers(users) {
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+
 function delay(ms = NETWORK_DELAY_MS) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -45,7 +49,6 @@ function getPartner(partnerId) {
   return partner;
 }
 
-// Свободные слоты партнёра на дату — ['09:00', '10:00', ...]
 async function getSlots(partnerId, date) {
   await delay(200);
 
@@ -68,7 +71,6 @@ async function createBooking({ partnerId, date, start, note = '' }) {
   const availability = partner.availability ?? DEFAULT_AVAILABILITY;
   const bookings = readBookings();
 
-  // Слот перепроверяем при создании: пока кастомер выбирал, его мог занять другой
   const freeSlots = getAvailableSlots(
     availability,
     bookings.filter((booking) => booking.partnerId === partnerId),
@@ -95,7 +97,6 @@ async function createBooking({ partnerId, date, start, note = '' }) {
   return newBooking;
 }
 
-// Записи текущего юзера: у кастомера — его записи, у партнёра — записи к нему
 async function getMyBookings() {
   await delay();
 
@@ -107,7 +108,6 @@ async function getMyBookings() {
     .sort((a, b) => `${a.date} ${a.start}`.localeCompare(`${b.date} ${b.start}`));
 }
 
-// Отменить может и кастомер, и партнёр; слот при этом снова становится свободным
 async function cancelBooking(id) {
   await delay();
 
@@ -125,4 +125,57 @@ async function cancelBooking(id) {
   return bookings[index];
 }
 
-export const mockBookingsApi = { getSlots, createBooking, getMyBookings, cancelBooking };
+async function blockSlot({ date, start }) {
+  await delay();
+
+  const user = getSessionUser();
+  if (user.role !== 'partner') {
+    throw new ApiError('Only partners can block slots', { status: 403 });
+  }
+
+  const availability = user.availability ?? DEFAULT_AVAILABILITY;
+  const newSlot = { id: crypto.randomUUID(), date, start };
+
+  const updatedUser = {
+    ...user,
+    availability: { ...availability, blockedSlots: [...(availability.blockedSlots ?? []), newSlot] },
+  };
+
+  writeUsers(readUsers().map((candidate) => (candidate.id === user.id ? updatedUser : candidate)));
+  return newSlot;
+}
+
+async function unblockSlot(id) {
+  await delay();
+
+  const user = getSessionUser();
+  if (user.role !== 'partner') {
+    throw new ApiError('Only partners can unblock slots', { status: 403 });
+  }
+
+  const availability = user.availability ?? DEFAULT_AVAILABILITY;
+  const blockedSlots = availability.blockedSlots ?? [];
+  if (!blockedSlots.some((slot) => slot.id === id)) {
+    throw new ApiError('Blocked slot not found', { status: 404 });
+  }
+
+  const updatedUser = {
+    ...user,
+    availability: { ...availability, blockedSlots: blockedSlots.filter((slot) => slot.id !== id) },
+  };
+
+  writeUsers(readUsers().map((candidate) => (candidate.id === user.id ? updatedUser : candidate)));
+}
+
+async function getMyAvailability() {
+  await delay();
+
+  const user = getSessionUser();
+  if (user.role !== 'partner') {
+    throw new ApiError('Only partners have availability', { status: 403 });
+  }
+
+  return user.availability ?? DEFAULT_AVAILABILITY;
+}
+
+export const mockBookingsApi = { getSlots, createBooking, getMyBookings, cancelBooking, blockSlot, unblockSlot, getMyAvailability };

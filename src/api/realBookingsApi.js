@@ -17,4 +17,16 @@ async function cancelBooking(id) {
   return request(`/bookings/${encodeURIComponent(id)}/cancel`, { method: 'PUT' });
 }
 
-export const realBookingsApi = { getSlots, createBooking, getMyBookings, cancelBooking };
+async function getMyAvailability() {
+  return request('/partners/me/availability', { method: 'GET' });
+}
+
+async function blockSlot({ date, start }) {
+  return request('/partners/me/blocked-slots', { body: JSON.stringify({ date, start }) });
+}
+
+async function unblockSlot(id) {
+  return request(`/partners/me/blocked-slots/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+export const realBookingsApi = { getSlots, createBooking, getMyBookings, cancelBooking, getMyAvailability, blockSlot, unblockSlot };
