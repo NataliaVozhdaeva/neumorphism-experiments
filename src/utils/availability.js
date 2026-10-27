@@ -28,7 +28,6 @@ export function toTime(totalMinutes) {
   return `${hours}:${minutes}`;
 }
 
-// День недели по дате; 'T00:00' — чтобы дата не съехала из-за часового пояса (как в schedule.js)
 function getWeekDay(dateISO) {
   return WEEK_DAYS[new Date(`${dateISO}T00:00`).getDay()];
 }
@@ -63,6 +62,21 @@ export function getAvailableSlots(availability, bookings, dateISO, now = new Dat
       const isBlocked = blockedSlots.includes(toTime(start));
 
       if (!isPast && !isBusy && !isBlocked) slots.push(toTime(start));
+    }
+  }
+
+  return slots;
+}
+
+export function getDaySlots(availability, dateISO) {
+  if (isDateBlocked(availability, dateISO)) return [];
+
+  const { weekly, slotMinutes } = availability;
+  const slots = [];
+  for (const interval of weekly[getWeekDay(dateISO)] ?? []) {
+    const intervalEnd = toMinutes(interval.to);
+    for (let start = toMinutes(interval.from); start + slotMinutes <= intervalEnd; start += slotMinutes) {
+      slots.push(toTime(start));
     }
   }
 
