@@ -344,8 +344,6 @@ function Profile() {
                 <dd>{new Date(user.createdAt).toLocaleDateString()}</dd>
               </div>
             </dl>
-            {/* QR ведёт на страницу выбора действия (профиль / запись) — её можно открыть без логина.
-                Клик по QR имитирует сканирование. Нужен только партнёру, чтобы делиться с кастомерами */}
             {user.role === 'partner' && (
               <div className='profile-qr-wrapper'>
                 <a className='profile-qr' href={`/scan/${user.id}`} target='_blank' rel='noreferrer' aria-label='Open your public page'>
@@ -359,8 +357,6 @@ function Profile() {
 
           <div className='profile-card additional-info'>
             <Btn text='Edit' className='accountBtn accountBtn-edit btn-green' onClick={startEditing} />
-
-            {/* Подсказка нужна только партнёрам */}
             {user.role === 'partner' && (
               <div className='profile-hint'>
                 <span className='info-icon icon btn'>

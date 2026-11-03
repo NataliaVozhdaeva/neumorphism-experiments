@@ -296,7 +296,8 @@
 .request-accept,
 .request-decline,
 .request-undo,
-.request-deal {
+.request-deal,
+.request-appointment {
   padding: 4px 12px;
   font-size: 14px;
 }

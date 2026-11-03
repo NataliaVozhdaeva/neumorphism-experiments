@@ -29,7 +29,6 @@ function Book() {
 
   useEffect(() => {
     if (!date) {
-      console.log('no date');
       return;
     }
 
@@ -68,7 +67,14 @@ function Book() {
         {booked ? (
           <div className='profile-card booking-card'>
             <p className='scan-industry'>
-              Booked: {new Date(`${booked.date}T00:00`).toLocaleDateString()} at {booked.start}–{booked.end}
+              Booked:{' '}
+              {new Date(`${booked.date}T00:00`).toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              })}{' '}
+              at {booked.start}–{booked.end}
             </p>
           </div>
         ) : (

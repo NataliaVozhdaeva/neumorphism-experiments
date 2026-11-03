@@ -13,32 +13,26 @@ import { FALLBACK_CURRENCY, formatRange } from '../utils/currency';
 import { FREQUENCY_OPTIONS, UNIT_OPTIONS, formatSchedule, todayISO } from '../utils/schedule';
 import '../styles/requests.css';
 
-// Подпись о бюджете рядом с мэтчем; для 'unknown' ничего не пишем
 const budgetFitLabels = {
   overlap: 'Within budget',
-  // 'outside' — у заявок, созданных до появления порога в 10%
   outside: 'Outside budget',
 };
 
-// Рейтинг { average, count } одной строкой; у юзера без оценок — "No ratings yet"
 function formatRating(rating) {
   return rating ? `★ ${rating.average.toFixed(1)} (${rating.count})` : 'No ratings yet';
 }
 
-// Ответ партнёра на заявку, как его видит кастомер
 const matchStatusLabels = {
   pending: 'Waiting for answer',
   accepted: 'Accepted',
   declined: 'Declined',
 };
 
-// Для 'over' подпись зависит от процента превышения
 function getBudgetLabel(match) {
   if (match.budgetFit === 'over') return `Over budget by ${match.budgetOverPercent}%`;
   return budgetFitLabels[match.budgetFit];
 }
 
-// Карточка заявки: общие поля для кастомера и партнёра
 function RequestDetails({ item }) {
   return (
     <dl className='request-details'>
@@ -66,17 +60,13 @@ function RequestDetails({ item }) {
   );
 }
 
-// Сколько времени у партнёра на отмену случайного выбора
 const UNDO_DELAY_MS = 15000;
 
-// Кнопки ответа в карточке входящей заявки у партнёра. После отправки ответа кнопки скрываются
 function PartnerResponse({ item, onRespond }) {
   const { status, dealId, workStarted } = item.myMatch;
-  // Выбор, который ещё не ушёл на сервер: его можно отменить в течение UNDO_DELAY_MS
   const [choice, setChoice] = useState(null);
   const timerRef = useRef(null);
 
-  // При уходе со страницы таймер сбрасываем, неотправленный выбор теряется
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
   const handleChoose = (value) => {
@@ -107,22 +97,23 @@ function PartnerResponse({ item, onRespond }) {
           {status === 'pending' && <span className='request-status'>Waiting for your answer</span>}
           {status === 'accepted' && <span className='request-status request-status--accepted'>You accepted</span>}
           {status === 'declined' && <span className='request-status request-status--declined'>You declined</span>}
-          {/* Кнопки только пока ответа нет; после отправки решение не меняется */}
           {status === 'pending' && <Btn text='Accept' className='request-accept btn-green' onClick={() => handleChoose('accepted')} />}
           {status === 'pending' && <Btn text='Decline' className='request-decline' onClick={() => handleChoose('declined')} />}
         </>
       )}
-      {/* Чат появляется, когда кастомер перешёл к сделке */}
-      {dealId && <Link to={`/chat/${dealId}`} className='request-chat-link'>Open chat</Link>}
+      {dealId && (
+        <Link to={`/chat/${dealId}`} className='request-chat-link'>
+          Open chat
+        </Link>
+      )}
       {status === 'accepted' && !dealId && <span className='match-reason'>The customer has not opened the deal yet</span>}
     </div>
   );
 }
 
-// Подобранные AI партнёры — кастомер видит всех троих, может открыть их профили
-// и перейти к сделке с теми, кто принял заявку
 function MatchedPartners({ item, onGoToDeal }) {
-  // Заявки, созданные до появления мэтчинга
+  const navigate = useNavigate();
+
   if (!item.matches) return null;
 
   return (
@@ -141,11 +132,21 @@ function MatchedPartners({ item, onGoToDeal }) {
                 </Link>
                 <span className='rating'>{formatRating(match.partnerRating)}</span>
                 {match.reason && <span className='match-reason'>{match.reason}</span>}
-                {/* Бюджет, статус и действие — отдельной строкой под описанием */}
                 <div className='match-footer'>
                   {getBudgetLabel(match) && <span className={`match-budget match-budget--${match.budgetFit}`}>{getBudgetLabel(match)}</span>}
-                  <span className={`request-status request-status--${match.status}`}>{match.workStarted ? 'Work in progress' : matchStatusLabels[match.status]}</span>
-                  {match.status === 'accepted' && <Btn text='Go to deal' className='request-deal btn-green' onClick={() => onGoToDeal(item.id, match.partnerId)} />}
+                  <span className={`request-status request-status--${match.status}`}>
+                    {match.workStarted ? 'Work in progress' : matchStatusLabels[match.status]}
+                  </span>
+                  {match.status === 'accepted' && (
+                    <>
+                      <Btn text='Go to chat' className='request-deal btn-green' onClick={() => onGoToDeal(item.id, match.partnerId)} />
+                      <Btn
+                        text='Book an appointment'
+                        className='request-appointment btn-green'
+                        onClick={() => navigate(`/book/${match.partnerId}`)}
+                      />
+                    </>
+                  )}
                 </div>
               </div>
             </li>
@@ -388,7 +389,14 @@ function Requests() {
             <div className='request-dates'>
               <label className='request-date-label'>
                 <span>Starting</span>
-                <Input className='request-date' type='date' name='startDate' min={todayISO()} onChange={(e) => setStartDate(e.target.value)} required />
+                <Input
+                  className='request-date'
+                  type='date'
+                  name='startDate'
+                  min={todayISO()}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  required
+                />
               </label>
               <label className='request-date-label'>
                 <span>Until (optional)</span>
