@@ -6,7 +6,7 @@ import 'react-day-picker/style.css';
 function SlotCalendar({ date, onDateChange, children }) {
   return (
     <div className='slot-calendar'>
-      <div className='profile-card booking-card'>
+      <div className='profile-card booking-card calendar'>
         <DayPicker
           mode='single'
           selected={new Date(`${date}T00:00`)}
@@ -15,8 +15,14 @@ function SlotCalendar({ date, onDateChange, children }) {
         />
       </div>
       {date && (
-        <div className='profile-card booking-card'>
-          <h3>Date(${date}T00:00).toLocaleDateString()</h3>
+        <div className='profile-card booking-card timeslots'>
+          <h3>
+            {new Date(`${date}T00:00`).toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </h3>
           {children}
         </div>
       )}

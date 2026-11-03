@@ -12,7 +12,7 @@ import '../styles/profile.css';
 function Schedule() {
   const { user } = useAuth();
   const isPartner = user?.role === 'partner';
-  const [date, setDate] = useState(todayISO());
+  const [date, setDate] = useState('');
   const [availability, setAvailability] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [error, setError] = useState('');
