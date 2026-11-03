@@ -4,13 +4,17 @@ import { Link, Navigate, useNavigate } from 'react-router';
 import { useAuth } from '../context/authContext';
 import { requestsApi } from '../api/requestsApi';
 import { chatApi } from '../api/chatApi';
+import { bookingsApi } from '../api/bookingsApi';
 import Nav from '../components/nav';
 import Input from '../components/input';
 import Textarea from '../components/textarea';
 import Btn from '../components/button';
 import Select from '../components/select';
+import Modal from '../components/modal';
 import { FALLBACK_CURRENCY, formatRange } from '../utils/currency';
 import { FREQUENCY_OPTIONS, UNIT_OPTIONS, formatSchedule, todayISO } from '../utils/schedule';
+import { ACTIVE_BOOKING_STATUSES } from '../utils/availability';
+
 import '../styles/requests.css';
 
 const budgetFitLabels = {
@@ -111,8 +115,29 @@ function PartnerResponse({ item, onRespond }) {
   );
 }
 
-function MatchedPartners({ item, onGoToDeal }) {
+function MatchedPartners({ item, onGoToDeal, bookings, onBookingChange }) {
   const navigate = useNavigate();
+  const [openedBooking, setOpenedBooking] = useState(null);
+  const findActiveBooking = (bookings, partnerId) => bookings.find((b) => b.partnerId === partnerId && ACTIVE_BOOKING_STATUSES.includes(b.status));
+
+  const handleCancel = async () => {
+    try {
+      await bookingsApi.cancelBooking(openedBooking.id);
+      setOpenedBooking(null);
+      onBookingChange();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleReschedule = async () => {
+    try {
+      await bookingsApi.cancelBooking(openedBooking.id);
+      navigate(`/book/${openedBooking.partnerId}`);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   if (!item.matches) return null;
 
@@ -123,36 +148,59 @@ function MatchedPartners({ item, onGoToDeal }) {
       {!item.matchingError && item.matches.length === 0 && <p className='request-empty'>No matching partners yet</p>}
       {item.matches.length > 0 && (
         <ul className='match-list'>
-          {item.matches.map((match) => (
-            <li key={match.partnerId} className='match-item'>
-              <span className='match-score'>{match.score}%</span>
-              <div className='match-info'>
-                <Link to={`/profile/${match.partnerId}`} className='match-name'>
-                  {match.partnerName || 'Partner'}
-                </Link>
-                <span className='rating'>{formatRating(match.partnerRating)}</span>
-                {match.reason && <span className='match-reason'>{match.reason}</span>}
-                <div className='match-footer'>
-                  {getBudgetLabel(match) && <span className={`match-budget match-budget--${match.budgetFit}`}>{getBudgetLabel(match)}</span>}
-                  <span className={`request-status request-status--${match.status}`}>
-                    {match.workStarted ? 'Work in progress' : matchStatusLabels[match.status]}
-                  </span>
-                  {match.status === 'accepted' && (
-                    <>
-                      <Btn text='Go to chat' className='request-deal btn-green' onClick={() => onGoToDeal(item.id, match.partnerId)} />
-                      <Btn
-                        text='Book an appointment'
-                        className='request-appointment btn-green'
-                        onClick={() => navigate(`/book/${match.partnerId}`)}
-                      />
-                    </>
-                  )}
+          {item.matches.map((match) => {
+            const booking = findActiveBooking(bookings, match.partnerId);
+            return (
+              <li key={match.partnerId} className='match-item'>
+                <span className='match-score'>{match.score}%</span>
+                <div className='match-info'>
+                  <Link to={`/profile/${match.partnerId}`} className='match-name'>
+                    {match.partnerName || 'Partner'}
+                  </Link>
+                  <span className='rating'>{formatRating(match.partnerRating)}</span>
+                  {match.reason && <span className='match-reason'>{match.reason}</span>}
+                  <div className='match-footer'>
+                    {getBudgetLabel(match) && <span className={`match-budget match-budget--${match.budgetFit}`}>{getBudgetLabel(match)}</span>}
+                    <span className={`request-status request-status--${match.status}`}>
+                      {match.workStarted ? 'Work in progress' : matchStatusLabels[match.status]}
+                    </span>
+                    {match.status === 'accepted' && (
+                      <>
+                        <Btn text='Go to chat' className='request-deal btn-green' onClick={() => onGoToDeal(item.id, match.partnerId)} />
+                        <Btn
+                          text={booking ? 'Booked' : 'Book an appointment'}
+                          className={booking ? 'request-appointment btn-booked' : 'request-appointment btn-green'}
+                          onClick={() => (booking ? setOpenedBooking(booking) : navigate(`/book/${match.partnerId}`))}
+                        />
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
+      <Modal isOpen={!!openedBooking} onClose={() => setOpenedBooking(null)}>
+        {openedBooking && (
+          <>
+            <h2 className='modal-title'>Your appointment</h2>
+            <p>
+              {new Date(`${openedBooking.date}T00:00`).toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+              , {openedBooking.start}–{openedBooking.end}
+            </p>
+            <div className='appointment-btns-container'>
+              <Btn text='Reschedule' onClick={handleReschedule} />
+              <Btn text='Cancel appointment' className='btn-red' onClick={handleCancel} />
+            </div>
+          </>
+        )}
+      </Modal>
     </div>
   );
 }
@@ -162,18 +210,22 @@ function Requests() {
   const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [createError, setCreateError] = useState('');
-  // Проверка и мэтчинг через AI занимают несколько секунд — блокируем кнопку, чтобы не отправить дважды
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Селекты у нас кастомные, в FormData не попадают — держим их значения в state
   const [frequency, setFrequency] = useState('');
   const [unit, setUnit] = useState('week');
-  // Нужна, чтобы у дат "по" не давать выбрать день раньше даты "с"
   const [startDate, setStartDate] = useState('');
+  const [bookings, setBookings] = useState([]);
+
+  useEffect(() => {
+    bookingsApi
+      .getMyBookings()
+      .then(setBookings)
+      .catch(() => {});
+  }, []);
+
   const isCustomer = user?.role === 'customer';
-  // Валюта берётся из профиля; поменять её можно на странице профиля
   const currency = user?.currency ?? FALLBACK_CURRENCY;
 
-  // Кастомеру — его заявки, партнёру — заявки, в которых он попал в топ-3
   useEffect(() => {
     if (!user) return;
     const load = isCustomer ? requestsApi.getMyRequests : requestsApi.getIncomingRequests;
@@ -181,7 +233,6 @@ function Requests() {
   }, [user, isCustomer]);
 
   const [deleteError, setDeleteError] = useState('');
-  // Ошибки ответа партнёра и перехода к сделке
   const [actionError, setActionError] = useState('');
 
   const handleRespond = async (id, status) => {
@@ -194,7 +245,6 @@ function Requests() {
     }
   };
 
-  // Создаёт чат (или находит уже созданный) и открывает его страницу
   const handleGoToDeal = async (requestId, partnerId) => {
     setActionError('');
     try {
@@ -206,7 +256,6 @@ function Requests() {
   };
 
   const handleDelete = async (id) => {
-    // Удаление необратимо — переспрашиваем
     if (!window.confirm('Delete this request? This cannot be undone.')) return;
 
     setDeleteError('');
@@ -222,12 +271,10 @@ function Requests() {
     e.preventDefault();
     setCreateError('');
 
-    // сохраняем узел формы до await — после него e.currentTarget уже обнулён
     const form = e.currentTarget;
     const formData = new FormData(form);
     const location = (formData.get('location') ?? '').trim();
     const serviceDescription = (formData.get('serviceDescription') ?? '').trim();
-    // Бюджет необязателен: пустое поле сохраняем как null, а не как 0
     const budgetFrom = formData.get('budgetFrom') ? Number(formData.get('budgetFrom')) : null;
     const budgetTo = formData.get('budgetTo') ? Number(formData.get('budgetTo')) : null;
 
@@ -239,13 +286,11 @@ function Requests() {
       setCreateError('Describe the service you need');
       return;
     }
-    // Сравниваем границы только если указаны обе
     if (budgetFrom !== null && budgetTo !== null && budgetFrom > budgetTo) {
       setCreateError('Minimum budget cannot be greater than maximum budget');
       return;
     }
 
-    // Срок необязателен: без выбора (или с "Flexible") расписания нет
     let schedule = null;
     if (frequency === 'once') {
       const dateFrom = formData.get('dateFrom');
@@ -305,7 +350,6 @@ function Requests() {
     return <Navigate to='/' replace />;
   }
 
-  // Партнёр видит заявки, которые AI подобрал под его профиль
   if (!isCustomer) {
     return (
       <div className='requests contentContainer'>
@@ -364,7 +408,6 @@ function Requests() {
           placeholder='When do you need it? (optional)'
         />
 
-        {/* Один раз: окно дат, в которое нужно выполнить услугу; "по" необязательно — тогда конкретный день */}
         {frequency === 'once' && (
           <div className='request-dates'>
             <label className='request-date-label'>
@@ -378,7 +421,6 @@ function Requests() {
           </div>
         )}
 
-        {/* Регулярно: "каждые N дней/недель/месяцев" покрывает и раз в неделю, и каждые 10 дней, и раз в месяц */}
         {frequency === 'recurring' && (
           <>
             <div className='request-interval'>
@@ -427,7 +469,12 @@ function Requests() {
               <li key={item.id} className='request-card'>
                 <Btn text='Delete' className='request-delete' onClick={() => handleDelete(item.id)} />
                 <RequestDetails item={item} />
-                <MatchedPartners item={item} onGoToDeal={handleGoToDeal} />
+                <MatchedPartners
+                  item={item}
+                  onGoToDeal={handleGoToDeal}
+                  bookings={bookings}
+                  onBookingChange={() => bookingsApi.getMyBookings().then(setBookings)}
+                />
               </li>
             ))}
           </ul>

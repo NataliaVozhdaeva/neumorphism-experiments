@@ -20,7 +20,7 @@
 }
 
 .input.error {
-  color: var(--red);
+  color: var(--red-accent);
 }
 
 .input::placeholder {

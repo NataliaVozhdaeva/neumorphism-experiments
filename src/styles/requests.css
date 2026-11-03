@@ -87,7 +87,7 @@
 }
 
 .request-delete:hover {
-  color: var(--red);
+  color: var(--red-accent);
 }
 
 .request-details {
@@ -254,10 +254,9 @@
 
 .match-budget--over,
 .match-budget--outside {
-  color: var(--red);
+  color: var(--red-accent);
 }
 
-/* Шапка входящей заявки у партнёра: процент мэтча и от кого */
 .incoming-header {
   display: flex;
   align-items: center;
@@ -290,7 +289,7 @@
 }
 
 .request-status--declined {
-  color: var(--red);
+  color: var(--red-accent);
 }
 
 .request-accept,
@@ -303,7 +302,7 @@
 }
 
 .request-decline:hover {
-  color: var(--red);
+  color: var(--red-accent);
 }
 
 .request-chat-link {
@@ -311,9 +310,17 @@
   color: var(--blue);
 }
 
-/* Рейтинг рядом с именем */
 .rating {
   font-size: 14px;
   font-weight: normal;
   color: var(--gray);
+}
+
+.appointment-btns-container {
+  display: flex;
+  gap: 8px;
+}
+
+.appointment-btns-container .btn {
+  padding: 8px 12px;
 }
