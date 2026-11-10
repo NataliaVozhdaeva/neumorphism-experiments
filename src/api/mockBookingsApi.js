@@ -178,4 +178,22 @@ async function getMyAvailability() {
   return user.availability ?? EMPTY_AVAILABILITY;
 }
 
-export const mockBookingsApi = { getSlots, createBooking, getMyBookings, cancelBooking, blockSlot, unblockSlot, getMyAvailability };
+async function saveWeekly(weekly) {
+  await delay();
+
+  const user = getSessionUser();
+  if (user.role !== 'partner') {
+    throw new ApiError('Only partners can edit schedule', { status: 403 });
+  }
+
+  const availability = user.availability ?? EMPTY_AVAILABILITY;
+  const updatedUser = {
+    ...user,
+    availability: { ...availability, weekly: { ...availability.weekly, ...weekly } },
+  };
+
+  writeUsers(readUsers().map((candidate) => (candidate.id === user.id ? updatedUser : candidate)));
+  return updatedUser.availability;
+}
+
+export const mockBookingsApi = { getSlots, createBooking, getMyBookings, cancelBooking, blockSlot, unblockSlot, getMyAvailability, saveWeekly };

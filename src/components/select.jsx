@@ -9,7 +9,6 @@ function Select({ className = '', options = [], value, onChange, placeholder = '
   const [maxHeight, setMaxHeight] = useState();
   const selectRef = useRef(null);
 
-  // Пока список открыт, закрываем его по клику в любом месте вне селекта
   useEffect(() => {
     if (!isOpen) return;
 
@@ -18,17 +17,14 @@ function Select({ className = '', options = [], value, onChange, placeholder = '
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    // Снимаем слушатель при закрытии, чтобы не висел на document
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  // Ограничиваем высоту списка, чтобы его нижняя граница была в 20px от низа вьюпорта
   useLayoutEffect(() => {
     if (!isOpen) return;
 
     const updateMaxHeight = () => {
       const { bottom } = selectRef.current.getBoundingClientRect();
-      // 8px — отступ списка от кнопки (см. top в .select-list)
       setMaxHeight(Math.max(window.innerHeight - bottom - 8 - VIEWPORT_GAP, 0));
     };
 

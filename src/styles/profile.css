@@ -50,12 +50,11 @@
   row-gap: 40px;
 }
 
-/* Подсказка-тултип: скрыта, появляется под иконкой при наведении */
 .hint-text {
-  position: absolute;
-  top: calc(100% + 12px);
-  right: 0;
   z-index: 10;
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 0;
 
   width: max-content;
   max-width: 240px;
@@ -79,9 +78,14 @@
 }
 
 .profile-hint:hover .hint-text,
-.profile-qr-wrapper:hover .hint-text {
+.profile-qr-wrapper:hover .hint-text,
+.schedule-hint:hover .hint-text {
   opacity: 1;
   visibility: visible;
+}
+
+.schedule-hint {
+  position: relative;
 }
 
 .profile-hint {
@@ -451,4 +455,15 @@
 
 .schedule-input-wrapper {
   align-items: center;
+}
+
+.select-weekdays .select-list {
+  gap: 16px;
+}
+
+.submitDaySchedule {
+  padding: 8px 16px;
+}
+
+.hint-text {
 }

@@ -4,22 +4,54 @@ import { bookingsApi } from '../api/bookingsApi';
 import Btn from '../components/button';
 import Nav from '../components/nav';
 import Input from '../components/input';
+import Select from '../components/select';
 import SlotCalendar from '../components/slotCalendar';
 import { useAuth } from '../context/authContext';
-import { ACTIVE_BOOKING_STATUSES, getDaySlots } from '../utils/availability';
+import { ACTIVE_BOOKING_STATUSES, getDaySlots, toTime, WEEK_DAYS } from '../utils/availability';
 import { todayISO } from '../utils/schedule';
 import '../styles/profile.css';
 import { Weekdays } from 'react-day-picker';
+
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 function Schedule() {
   const { user } = useAuth();
   const isPartner = user?.role === 'partner';
   const [date, setDate] = useState('');
+  const [daySchedule, setdaySchedule] = useState('');
   const [availability, setAvailability] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [error, setError] = useState('');
+  const [hours, setHours] = useState(Object.fromEntries(WEEKDAYS.map((day) => [day, { from: '', to: '' }])));
 
-  const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const weekdayOptions = WEEKDAYS.map((weekday) => ({ value: weekday, label: weekday }));
+
+  const handleHoursChange = (field, value) => {
+    setHours((prev) => ({
+      ...prev,
+      [daySchedule]: { ...prev[daySchedule], [field]: value },
+    }));
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    const from = Number(hours[daySchedule].from);
+    const to = Number(hours[daySchedule].to);
+    if (hours[daySchedule].from === '' || hours[daySchedule].to === '' || from >= to || to > 24) {
+      setError('Enter working hours: "from" must be earlier than "to"');
+      return;
+    }
+
+    try {
+      const key = WEEK_DAYS[WEEKDAYS.indexOf(daySchedule)];
+      const updated = await bookingsApi.saveWeekly({ [key]: [{ from: toTime(from * 60), to: toTime(to * 60) }] });
+      setAvailability(updated);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   useEffect(() => {
     if (!isPartner) return;
@@ -56,9 +88,48 @@ function Schedule() {
           <p>Create a schedule that allows your customers to make appointments.</p>
 
           <div className='content'>
-            <form>
+            <form onSubmit={handleSave}>
               <div className='schedule-input-container'>
-                {WEEKDAYS.map((weekday) => {
+                <Select className='select-weekdays' options={weekdayOptions} value={daySchedule} onChange={setdaySchedule} placeholder='Set a day' />
+
+                {daySchedule && (
+                  <div className='schedule-input-wrapper'>
+                    <Input
+                      className='schedule-input'
+                      type='text'
+                      placeholder='From'
+                      min='0'
+                      max='24'
+                      value={hours[daySchedule].from}
+                      onChange={(e) => handleHoursChange('from', e.target.value)}
+                    />
+                    <span> — </span>
+                    <Input
+                      className='schedule-input'
+                      type='text'
+                      placeholder='To'
+                      min='0'
+                      max='24'
+                      value={hours[daySchedule].to}
+                      onChange={(e) => handleHoursChange('to', e.target.value)}
+                    />
+
+                    <label className='everyDayCheckbox-label schedule-hint'>
+                      <Input className='checkbox everyDayCheckbox' type='checkbox' hidden></Input>
+                      <span className='checkbox-custom'></span>
+                      <span>Apply to all days</span>
+                      <span className='hint-text'>You can change it any time and for any day</span>
+                    </label>
+
+                    <Btn className='submitDaySchedule btn-green' type='submit'>
+                      Save
+                    </Btn>
+                  </div>
+                )}
+
+                {error && <p className='error'>{error}</p>}
+
+                {/* {WEEKDAYS.map((weekday) => {
                   return (
                     <div key={weekday} className='weekday-container'>
                       <div className='weekday'>{weekday}</div>
@@ -86,9 +157,8 @@ function Schedule() {
                       </div>
                     </div>
                   );
-                })}
+                })} */}
               </div>
-              <Btn type='submit'></Btn>
             </form>
             {/* <SlotCalendar date={date} onDateChange={setDate}>
               {availability === null && <p className='scan-industry'>Loading...</p>}

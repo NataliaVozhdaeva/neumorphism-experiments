@@ -57,3 +57,8 @@ body {
 
   border-radius: 8px;
 }
+
+.error {
+  margin: 0;
+  color: var(--red);
+}

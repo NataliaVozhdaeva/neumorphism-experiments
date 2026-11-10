@@ -29,4 +29,8 @@ async function unblockSlot(id) {
   return request(`/partners/me/blocked-slots/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
-export const realBookingsApi = { getSlots, createBooking, getMyBookings, cancelBooking, getMyAvailability, blockSlot, unblockSlot };
+async function saveWeekly(weekly) {
+  return request('/partners/me/availability', { method: 'PUT', body: JSON.stringify({ weekly }) });
+}
+
+export const realBookingsApi = { getSlots, createBooking, getMyBookings, cancelBooking, getMyAvailability, blockSlot, unblockSlot, saveWeekly };
