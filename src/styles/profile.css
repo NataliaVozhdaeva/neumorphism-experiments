@@ -435,3 +435,20 @@
   color: var(--green-text);
   border: 2px solid var(--green-text);
 }
+
+.schedule-input-container,
+.schedule-input-wrapper,
+.weekday-container,
+.checkbox-contaner {
+  display: flex;
+  gap: 16px;
+}
+
+.schedule-input-container,
+.weekday-container {
+  flex-direction: column;
+}
+
+.schedule-input-wrapper {
+  align-items: center;
+}

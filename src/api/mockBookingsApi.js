@@ -1,5 +1,5 @@
 import { ApiError } from './apiError';
-import { DEFAULT_AVAILABILITY, getAvailableSlots, toMinutes, toTime } from '../utils/availability';
+import { EMPTY_AVAILABILITY, getAvailableSlots, toMinutes, toTime } from '../utils/availability';
 
 // Мок "таблицы" записей в localStorage — сессия и юзеры общие с mockAuthApi
 const DB_KEY = 'mockDb_bookings';
@@ -53,7 +53,7 @@ async function getSlots(partnerId, date) {
   await delay(200);
 
   const partner = getPartner(partnerId);
-  const availability = partner.availability ?? DEFAULT_AVAILABILITY;
+  const availability = partner.availability ?? EMPTY_AVAILABILITY;
   const bookings = readBookings().filter((booking) => booking.partnerId === partnerId);
 
   return getAvailableSlots(availability, bookings, date);
@@ -68,7 +68,7 @@ async function createBooking({ partnerId, date, start, note = '' }) {
   }
 
   const partner = getPartner(partnerId);
-  const availability = partner.availability ?? DEFAULT_AVAILABILITY;
+  const availability = partner.availability ?? EMPTY_AVAILABILITY;
   const bookings = readBookings();
 
   const freeSlots = getAvailableSlots(
@@ -133,7 +133,7 @@ async function blockSlot({ date, start }) {
     throw new ApiError('Only partners can block slots', { status: 403 });
   }
 
-  const availability = user.availability ?? DEFAULT_AVAILABILITY;
+  const availability = user.availability ?? EMPTY_AVAILABILITY;
   const newSlot = { id: crypto.randomUUID(), date, start };
 
   const updatedUser = {
@@ -153,7 +153,7 @@ async function unblockSlot(id) {
     throw new ApiError('Only partners can unblock slots', { status: 403 });
   }
 
-  const availability = user.availability ?? DEFAULT_AVAILABILITY;
+  const availability = user.availability ?? EMPTY_AVAILABILITY;
   const blockedSlots = availability.blockedSlots ?? [];
   if (!blockedSlots.some((slot) => slot.id === id)) {
     throw new ApiError('Blocked slot not found', { status: 404 });
@@ -175,7 +175,7 @@ async function getMyAvailability() {
     throw new ApiError('Only partners have availability', { status: 403 });
   }
 
-  return user.availability ?? DEFAULT_AVAILABILITY;
+  return user.availability ?? EMPTY_AVAILABILITY;
 }
 
 export const mockBookingsApi = { getSlots, createBooking, getMyBookings, cancelBooking, blockSlot, unblockSlot, getMyAvailability };

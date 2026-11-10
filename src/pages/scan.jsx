@@ -8,8 +8,6 @@ import Nav from '../components/nav';
 import { getIndustryLabel } from '../utils/industries';
 import '../styles/profile.css';
 
-// Страница, на которую ведёт QR-код: краткая карточка партнёра и выбор действия.
-// Логин не нужен — как и на публичном профиле
 function Scan() {
   const { id } = useParams();
   const navigate = useNavigate();

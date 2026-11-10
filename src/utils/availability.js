@@ -1,12 +1,14 @@
 export const WEEK_DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
-export const DEFAULT_AVAILABILITY = {
+// Расписания по умолчанию нет: пока партнёр сам его не составил, все дни пустые (= записаться нельзя)
+// Пустой массив у дня означает выходной
+export const EMPTY_AVAILABILITY = {
   weekly: {
-    mon: [{ from: '09:00', to: '17:00' }],
-    tue: [{ from: '09:00', to: '17:00' }],
-    wed: [{ from: '09:00', to: '17:00' }],
-    thu: [{ from: '09:00', to: '17:00' }],
-    fri: [{ from: '09:00', to: '17:00' }],
+    mon: [],
+    tue: [],
+    wed: [],
+    thu: [],
+    fri: [],
     sat: [],
     sun: [],
   },
