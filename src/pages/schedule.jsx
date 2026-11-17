@@ -67,6 +67,9 @@ function Schedule() {
 
       const updated = await bookingsApi.saveWeekly(weekly);
       setAvailability(updated);
+      setDaySchedule('');
+      setApplyTo('none');
+      setHours((prev) => ({ ...prev, [daySchedule]: { from: '', to: '' } }));
     } catch (err) {
       setError(err.message);
     }
