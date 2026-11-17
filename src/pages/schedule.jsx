@@ -17,6 +17,7 @@ function Schedule() {
   const { user } = useAuth();
   const isPartner = user?.role === 'partner';
   const [date, setDate] = useState('');
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [applyTo, setApplyTo] = useState('none');
   const [daySchedule, setDaySchedule] = useState('');
   const [availability, setAvailability] = useState(null);
@@ -122,96 +123,102 @@ function Schedule() {
           <p>Create a schedule that allows your customers to make appointments.</p>
 
           <div className='content'>
-            <form onSubmit={handleSave}>
-              <div className='schedule-input-container'>
-                <Select className='select-WEEK' options={weekdayOptions} value={daySchedule} onChange={setDaySchedule} placeholder='Set a day' />
+            <button className='btn showSchedule' type='button' onClick={() => setIsScheduleOpen((prev) => !prev)}>
+              {isScheduleOpen ? 'Hide schedule' : 'Show schedule'}
+            </button>
+            {isScheduleOpen && (
+              <div className='schedule-editor'>
+                <form onSubmit={handleSave}>
+                  <div className='schedule-input-container'>
+                    <Select className='select-WEEK' options={weekdayOptions} value={daySchedule} onChange={setDaySchedule} placeholder='Set a day' />
 
-                {daySchedule && (
-                  <>
-                    <div className='schedule-input-wrapper'>
-                      <Input
-                        className='schedule-input'
-                        type='text'
-                        placeholder='From'
-                        min='0'
-                        max='24'
-                        value={hours[daySchedule].from}
-                        onChange={(e) => handleHoursChange('from', e.target.value)}
-                      />
-                      <span> — </span>
-                      <Input
-                        className='schedule-input'
-                        type='text'
-                        placeholder='To'
-                        min='0'
-                        max='24'
-                        value={hours[daySchedule].to}
-                        onChange={(e) => handleHoursChange('to', e.target.value)}
-                      />
-                    </div>
-                    <div className='checkbox-container'>
-                      <label className='everyDayCheckbox-label schedule-hint'>
-                        <Input
-                          className='checkbox everyDayCheckbox'
-                          type='checkbox'
-                          hidden
-                          checked={applyTo === 'wholeweek'}
-                          onChange={(e) => (e.target.checked ? setApplyTo('wholeweek') : setApplyTo('none'))}></Input>
-                        <span className='checkbox-custom'></span>
-                        <span>Apply to the whole week</span>
-                      </label>
-                      <label className='everyWeekDayCheckbox-label schedule-hint'>
-                        <Input
-                          className='checkbox everyWeekDayCheckbox'
-                          type='checkbox'
-                          hidden
-                          checked={applyTo === 'weekdays'}
-                          onChange={(e) => (e.target.checked ? setApplyTo('weekdays') : setApplyTo('none'))}></Input>
-                        <span className='checkbox-custom'></span>
-                        <span>Apply to all weekdays</span>
-                      </label>
-
-                      <span className='hint-text'>You can change it any time and for any day</span>
-                    </div>
-
-                    <Btn className='submitDaySchedule btn-green' type='submit'>
-                      Add a slot
-                    </Btn>
-                  </>
-                )}
-
-                {error && <p className='error'>{error}</p>}
-              </div>
-            </form>
-
-            {availability &&
-              WEEK.map((weekday, index) => {
-                const key = WEEK_DAYS[index];
-                const slots = availability.weekly[key];
-
-                if (slots.length !== 0) {
-                  return (
-                    <div key={weekday} className='weekday-container'>
-                      <div className='weekday-wrapper'>
-                        <span className='weekday'>{weekday}</span>
-                        <div className='time_slots'>
-                          {slots.map((slot) => {
-                            return (
-                              <div className='time_slot'>
-                                <span>{slot.from}</span>&nbsp;&ndash;&nbsp;<span>{slot.to}</span>
-                                <button className='btn remove-slot' type='button' onClick={() => handleRemoveSlot(key, slot)}>
-                                  X
-                                </button>
-                              </div>
-                            );
-                          })}
+                    {daySchedule && (
+                      <>
+                        <div className='schedule-input-wrapper'>
+                          <Input
+                            className='schedule-input'
+                            type='text'
+                            placeholder='From'
+                            min='0'
+                            max='24'
+                            value={hours[daySchedule].from}
+                            onChange={(e) => handleHoursChange('from', e.target.value)}
+                          />
+                          <span> — </span>
+                          <Input
+                            className='schedule-input'
+                            type='text'
+                            placeholder='To'
+                            min='0'
+                            max='24'
+                            value={hours[daySchedule].to}
+                            onChange={(e) => handleHoursChange('to', e.target.value)}
+                          />
                         </div>
-                      </div>
-                    </div>
-                  );
-                }
-              })}
-            {/* <SlotCalendar date={date} onDateChange={setDate}>
+                        <div className='checkbox-container'>
+                          <label className='everyDayCheckbox-label schedule-hint'>
+                            <Input
+                              className='checkbox everyDayCheckbox'
+                              type='checkbox'
+                              hidden
+                              checked={applyTo === 'wholeweek'}
+                              onChange={(e) => (e.target.checked ? setApplyTo('wholeweek') : setApplyTo('none'))}></Input>
+                            <span className='checkbox-custom'></span>
+                            <span>Apply to the whole week</span>
+                          </label>
+                          <label className='everyWeekDayCheckbox-label schedule-hint'>
+                            <Input
+                              className='checkbox everyWeekDayCheckbox'
+                              type='checkbox'
+                              hidden
+                              checked={applyTo === 'weekdays'}
+                              onChange={(e) => (e.target.checked ? setApplyTo('weekdays') : setApplyTo('none'))}></Input>
+                            <span className='checkbox-custom'></span>
+                            <span>Apply to all weekdays</span>
+                          </label>
+
+                          <span className='hint-text'>You can change it any time and for any day</span>
+                        </div>
+
+                        <Btn className='submitDaySchedule btn-green' type='submit'>
+                          Add a slot
+                        </Btn>
+                      </>
+                    )}
+
+                    {error && <p className='error'>{error}</p>}
+                  </div>
+                </form>
+                {availability &&
+                  WEEK.map((weekday, index) => {
+                    const key = WEEK_DAYS[index];
+                    const slots = availability.weekly[key];
+
+                    if (slots.length !== 0) {
+                      return (
+                        <div key={weekday} className='weekday-container'>
+                          <div className='weekday-wrapper'>
+                            <span className='weekday'>{weekday}</span>
+                            <div className='time_slots'>
+                              {slots.map((slot) => {
+                                return (
+                                  <div className='time_slot'>
+                                    <span>{slot.from}</span>&nbsp;&ndash;&nbsp;<span>{slot.to}</span>
+                                    <button className='btn remove-slot' type='button' onClick={() => handleRemoveSlot(key, slot)}>
+                                      X
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                  })}
+              </div>
+            )}
+            <SlotCalendar date={date} onDateChange={setDate}>
               {availability === null && <p className='scan-industry'>Loading...</p>}
               {availability && daySlots.length === 0 && <p className='scan-industry'>No working hours on this day</p>}
               {daySlots.length > 0 && (
@@ -235,7 +242,7 @@ function Schedule() {
               )}
 
               {error && <p className='scan-industry'>{error}</p>}
-            </SlotCalendar> */}
+            </SlotCalendar>
           </div>
         </>
       ) : (

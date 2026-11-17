@@ -21,6 +21,19 @@
   gap: 16px;
 }
 
+.schedule-editor form {
+  margin-bottom: 20px;
+}
+
+.schedule-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--gray);
+  border-radius: 20px;
+}
+
 .checkbox-container label {
   display: flex;
   gap: 8px;
@@ -55,4 +68,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.showSchedule {
+  padding: 8px 12px;
+  font-size: 16px;
 }
