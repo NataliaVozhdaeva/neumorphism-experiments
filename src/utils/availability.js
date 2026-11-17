@@ -1,4 +1,5 @@
 export const WEEK_DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+export const WORK_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
 
 export const EMPTY_AVAILABILITY = {
   weekly: {

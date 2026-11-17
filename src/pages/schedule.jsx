@@ -7,24 +7,24 @@ import Input from '../components/input';
 import Select from '../components/select';
 import SlotCalendar from '../components/slotCalendar';
 import { useAuth } from '../context/authContext';
-import { ACTIVE_BOOKING_STATUSES, getDaySlots, toTime, WEEK_DAYS } from '../utils/availability';
-import { todayISO } from '../utils/schedule';
+import { ACTIVE_BOOKING_STATUSES, getDaySlots, toTime, WEEK_DAYS, WORK_DAYS } from '../utils/availability';
 import '../styles/profile.css';
 import '../styles/schedule.css';
 
-const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 function Schedule() {
   const { user } = useAuth();
   const isPartner = user?.role === 'partner';
   const [date, setDate] = useState('');
+  const [applyTo, setApplyTo] = useState('none');
   const [daySchedule, setDaySchedule] = useState('');
   const [availability, setAvailability] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [error, setError] = useState('');
-  const [hours, setHours] = useState(Object.fromEntries(WEEKDAYS.map((day) => [day, { from: '', to: '' }])));
+  const [hours, setHours] = useState(Object.fromEntries(WEEK.map((day) => [day, { from: '', to: '' }])));
 
-  const weekdayOptions = WEEKDAYS.map((weekday) => ({ value: weekday, label: weekday }));
+  const weekdayOptions = WEEK.map((weekday) => ({ value: weekday, label: weekday }));
 
   const handleHoursChange = (field, value) => {
     setHours((prev) => ({
@@ -45,10 +45,17 @@ function Schedule() {
     }
 
     try {
-      const key = WEEK_DAYS[WEEKDAYS.indexOf(daySchedule)];
-      const existing = availability.weekly[key] ?? [];
-      const allDaySlots = [...existing, { from: toTime(from * 60), to: toTime(to * 60) }].sort((a, b) => a.from.localeCompare(b.from));
-      const updated = await bookingsApi.saveWeekly({ [key]: allDaySlots });
+      const key = WEEK_DAYS[WEEK.indexOf(daySchedule)];
+      const daysToWorkWith = applyTo === 'wholeweek' ? WEEK_DAYS : applyTo === 'weekdays' ? WORK_DAYS : 'none';
+      const weekly = Object.fromEntries(
+        daysToWorkWith.map((day) => {
+          const existing = availability.weekly[day] ?? [];
+          const allDaySlots = [...existing, { from: toTime(from * 60), to: toTime(to * 60) }].sort((a, b) => a.from.localeCompare(b.from));
+          return [day, allDaySlots];
+        }),
+      );
+
+      const updated = await bookingsApi.saveWeekly(weekly);
       setAvailability(updated);
     } catch (err) {
       setError(err.message);
@@ -104,79 +111,68 @@ function Schedule() {
           <div className='content'>
             <form onSubmit={handleSave}>
               <div className='schedule-input-container'>
-                <Select className='select-weekdays' options={weekdayOptions} value={daySchedule} onChange={setDaySchedule} placeholder='Set a day' />
+                <Select className='select-WEEK' options={weekdayOptions} value={daySchedule} onChange={setDaySchedule} placeholder='Set a day' />
 
                 {daySchedule && (
-                  <div className='schedule-input-wrapper'>
-                    <Input
-                      className='schedule-input'
-                      type='text'
-                      placeholder='From'
-                      min='0'
-                      max='24'
-                      value={hours[daySchedule].from}
-                      onChange={(e) => handleHoursChange('from', e.target.value)}
-                    />
-                    <span> — </span>
-                    <Input
-                      className='schedule-input'
-                      type='text'
-                      placeholder='To'
-                      min='0'
-                      max='24'
-                      value={hours[daySchedule].to}
-                      onChange={(e) => handleHoursChange('to', e.target.value)}
-                    />
+                  <>
+                    <div className='schedule-input-wrapper'>
+                      <Input
+                        className='schedule-input'
+                        type='text'
+                        placeholder='From'
+                        min='0'
+                        max='24'
+                        value={hours[daySchedule].from}
+                        onChange={(e) => handleHoursChange('from', e.target.value)}
+                      />
+                      <span> — </span>
+                      <Input
+                        className='schedule-input'
+                        type='text'
+                        placeholder='To'
+                        min='0'
+                        max='24'
+                        value={hours[daySchedule].to}
+                        onChange={(e) => handleHoursChange('to', e.target.value)}
+                      />
+                    </div>
+                    <div className='checkbox-container'>
+                      <label className='everyDayCheckbox-label schedule-hint'>
+                        <Input
+                          className='checkbox everyDayCheckbox'
+                          type='checkbox'
+                          hidden
+                          checked={applyTo === 'wholeweek'}
+                          onChange={(e) => (e.target.checked ? setApplyTo('wholeweek') : setApplyTo('none'))}></Input>
+                        <span className='checkbox-custom'></span>
+                        <span>Apply to the whole week</span>
+                      </label>
+                      <label className='everyWeekDayCheckbox-label schedule-hint'>
+                        <Input
+                          className='checkbox everyWeekDayCheckbox'
+                          type='checkbox'
+                          hidden
+                          checked={applyTo === 'weekdays'}
+                          onChange={(e) => (e.target.checked ? setApplyTo('weekdays') : setApplyTo('none'))}></Input>
+                        <span className='checkbox-custom'></span>
+                        <span>Apply to all weekdays</span>
+                      </label>
 
-                    <label className='everyDayCheckbox-label schedule-hint'>
-                      <Input className='checkbox everyDayCheckbox' type='checkbox' hidden></Input>
-                      <span className='checkbox-custom'></span>
-                      <span>Apply to all weekdays</span>
                       <span className='hint-text'>You can change it any time and for any day</span>
-                    </label>
+                    </div>
 
                     <Btn className='submitDaySchedule btn-green' type='submit'>
                       Add a slot
                     </Btn>
-                  </div>
+                  </>
                 )}
 
                 {error && <p className='error'>{error}</p>}
-
-                {/* {WEEKDAYS.map((weekday) => {
-                  return (
-                    <div key={weekday} className='weekday-container'>
-                      <div className='weekday'>{weekday}</div>
-                      <div className='schedule-input-wrapper'>
-                        <Input className='schedule-input' type='number' name='workingHoursFrom' placeholder='Working hours from' min='0' />
-                        <span> — </span>
-                        <Input className='schedule-input' type='number' name='workingHoursTo' placeholder='Working hours to' min='0' />
-                      </div>
-                      <div className='checkbox-contaner'>
-                        <label className='everyDayCheckbox-label'>
-                          <Input className='checkbox everyDayCheckbox' type='checkbox' hidden></Input>
-                          <span className='checkbox-custom'></span>
-                          <span>Apply to all days</span>
-                        </label>
-                        <label className='everyDayCheckbox-label'>
-                          <Input className='checkbox everyDayCheckbox' type='checkbox' hidden></Input>
-                          <span className='checkbox-custom'></span>
-                          <span>Mark as day off</span>
-                        </label>
-                        <label className='everyDayCheckbox-label'>
-                          <Input className='checkbox everyDayCheckbox' type='checkbox' hidden></Input>
-                          <span className='checkbox-custom'></span>
-                          <span>Custom hours</span>
-                        </label>
-                      </div>
-                    </div>
-                  );
-                })} */}
               </div>
             </form>
 
             {availability &&
-              WEEKDAYS.map((weekday, index) => {
+              WEEK.map((weekday, index) => {
                 const key = WEEK_DAYS[index];
                 const slots = availability.weekly[key];
 

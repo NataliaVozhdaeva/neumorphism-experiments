@@ -15,9 +15,15 @@
 .schedule-input-container,
 .schedule-input-wrapper,
 .weekday-container,
-.checkbox-contaner {
+.checkbox-container,
+.checkbox-container label {
   display: flex;
   gap: 16px;
+}
+
+.checkbox-container label {
+  display: flex;
+  gap: 8px;
 }
 
 .schedule-input-container,
