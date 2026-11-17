@@ -46,11 +46,21 @@ function Schedule() {
 
     try {
       const key = WEEK_DAYS[WEEK.indexOf(daySchedule)];
-      const daysToWorkWith = applyTo === 'wholeweek' ? WEEK_DAYS : applyTo === 'weekdays' ? WORK_DAYS : 'none';
+      const daysToWorkWith = applyTo === 'wholeweek' ? WEEK_DAYS : applyTo === 'weekdays' ? WORK_DAYS : [key];
+      const newSlot = { from: toTime(from * 60), to: toTime(to * 60) };
+
+      const conflictDay = daysToWorkWith.find((day) =>
+        (availability.weekly[day] ?? []).some((slot) => newSlot.from < slot.to && slot.from < newSlot.to),
+      );
+      if (conflictDay) {
+        setError(`${WEEK[WEEK_DAYS.indexOf(conflictDay)]} already has hours that overlap with this slot`);
+        return;
+      }
+
       const weekly = Object.fromEntries(
         daysToWorkWith.map((day) => {
           const existing = availability.weekly[day] ?? [];
-          const allDaySlots = [...existing, { from: toTime(from * 60), to: toTime(to * 60) }].sort((a, b) => a.from.localeCompare(b.from));
+          const allDaySlots = [...existing, newSlot].sort((a, b) => a.from.localeCompare(b.from));
           return [day, allDaySlots];
         }),
       );
