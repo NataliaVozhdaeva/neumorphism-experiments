@@ -1,7 +1,5 @@
 export const WEEK_DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
-// Расписания по умолчанию нет: пока партнёр сам его не составил, все дни пустые (= записаться нельзя)
-// Пустой массив у дня означает выходной
 export const EMPTY_AVAILABILITY = {
   weekly: {
     mon: [],

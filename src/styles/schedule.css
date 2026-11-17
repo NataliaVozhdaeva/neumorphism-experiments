@@ -1,0 +1,52 @@
+.weekday-wrapper,
+.time_slots {
+  display: flex;
+  gap: 8px;
+}
+
+.time_slots {
+  flex-direction: column;
+}
+
+.weekday {
+  min-width: 150px;
+}
+
+.schedule-input-container,
+.schedule-input-wrapper,
+.weekday-container,
+.checkbox-contaner {
+  display: flex;
+  gap: 16px;
+}
+
+.schedule-input-container,
+.weekday-container {
+  flex-direction: column;
+}
+
+.schedule-input-wrapper {
+  align-items: center;
+}
+
+.select-weekdays .select-list {
+  gap: 16px;
+}
+
+.submitDaySchedule {
+  padding: 8px 16px;
+}
+
+.remove-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.time_slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

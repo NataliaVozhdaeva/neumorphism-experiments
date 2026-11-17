@@ -10,7 +10,7 @@ import { useAuth } from '../context/authContext';
 import { ACTIVE_BOOKING_STATUSES, getDaySlots, toTime, WEEK_DAYS } from '../utils/availability';
 import { todayISO } from '../utils/schedule';
 import '../styles/profile.css';
-import { Weekdays } from 'react-day-picker';
+import '../styles/schedule.css';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -18,7 +18,7 @@ function Schedule() {
   const { user } = useAuth();
   const isPartner = user?.role === 'partner';
   const [date, setDate] = useState('');
-  const [daySchedule, setdaySchedule] = useState('');
+  const [daySchedule, setDaySchedule] = useState('');
   const [availability, setAvailability] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [error, setError] = useState('');
@@ -46,7 +46,21 @@ function Schedule() {
 
     try {
       const key = WEEK_DAYS[WEEKDAYS.indexOf(daySchedule)];
-      const updated = await bookingsApi.saveWeekly({ [key]: [{ from: toTime(from * 60), to: toTime(to * 60) }] });
+      const existing = availability.weekly[key] ?? [];
+      const allDaySlots = [...existing, { from: toTime(from * 60), to: toTime(to * 60) }].sort((a, b) => a.from.localeCompare(b.from));
+      const updated = await bookingsApi.saveWeekly({ [key]: allDaySlots });
+      setAvailability(updated);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleRemoveSlot = async (key, slot) => {
+    setError('');
+
+    try {
+      const remainingSlots = availability.weekly[key].filter((item) => item.from !== slot.from);
+      const updated = await bookingsApi.saveWeekly({ [key]: remainingSlots });
       setAvailability(updated);
     } catch (err) {
       setError(err.message);
@@ -90,7 +104,7 @@ function Schedule() {
           <div className='content'>
             <form onSubmit={handleSave}>
               <div className='schedule-input-container'>
-                <Select className='select-weekdays' options={weekdayOptions} value={daySchedule} onChange={setdaySchedule} placeholder='Set a day' />
+                <Select className='select-weekdays' options={weekdayOptions} value={daySchedule} onChange={setDaySchedule} placeholder='Set a day' />
 
                 {daySchedule && (
                   <div className='schedule-input-wrapper'>
@@ -117,12 +131,12 @@ function Schedule() {
                     <label className='everyDayCheckbox-label schedule-hint'>
                       <Input className='checkbox everyDayCheckbox' type='checkbox' hidden></Input>
                       <span className='checkbox-custom'></span>
-                      <span>Apply to all days</span>
+                      <span>Apply to all weekdays</span>
                       <span className='hint-text'>You can change it any time and for any day</span>
                     </label>
 
                     <Btn className='submitDaySchedule btn-green' type='submit'>
-                      Save
+                      Add a slot
                     </Btn>
                   </div>
                 )}
@@ -160,6 +174,34 @@ function Schedule() {
                 })} */}
               </div>
             </form>
+
+            {availability &&
+              WEEKDAYS.map((weekday, index) => {
+                const key = WEEK_DAYS[index];
+                const slots = availability.weekly[key];
+
+                if (slots.length !== 0) {
+                  return (
+                    <div key={weekday} className='weekday-container'>
+                      <div className='weekday-wrapper'>
+                        <span className='weekday'>{weekday}</span>
+                        <div className='time_slots'>
+                          {slots.map((slot) => {
+                            return (
+                              <div className='time_slot'>
+                                <span>{slot.from}</span>&nbsp;&ndash;&nbsp;<span>{slot.to}</span>
+                                <button className='btn remove-slot' type='button' onClick={() => handleRemoveSlot(key, slot)}>
+                                  X
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+              })}
             {/* <SlotCalendar date={date} onDateChange={setDate}>
               {availability === null && <p className='scan-industry'>Loading...</p>}
               {availability && daySlots.length === 0 && <p className='scan-industry'>No working hours on this day</p>}
