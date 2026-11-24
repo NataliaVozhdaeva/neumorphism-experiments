@@ -7,6 +7,7 @@ import Btn from '../components/button';
 import Nav from '../components/nav';
 import { useAuth } from '../context/authContext';
 import SlotCalendar from '../components/slotCalendar';
+import OptionChips from '../components/optionChips';
 
 import '../styles/profile.css';
 
@@ -19,6 +20,8 @@ function Book() {
   const [selected, setSelected] = useState('');
   const [error, setError] = useState('');
   const [booked, setBooked] = useState(null);
+  const [durations, setDurations] = useState([]);
+  const [duration, setDuration] = useState(null);
 
   useEffect(() => {
     authApi
@@ -28,7 +31,17 @@ function Book() {
   }, [id]);
 
   useEffect(() => {
-    if (!date) {
+    bookingsApi
+      .getBookingOptions(id)
+      .then((options) => {
+        setDurations(options.slotDurations);
+        setDuration(options.slotDurations[0]);
+      })
+      .catch((err) => setError(err.message));
+  }, [id]);
+
+  useEffect(() => {
+    if (!date || !duration) {
       return;
     }
 
@@ -36,22 +49,22 @@ function Book() {
     setSlots(null);
     setSelected('');
     bookingsApi
-      .getSlots(id, date)
+      .getSlots(id, date, duration)
       .then((result) => !cancelled && setSlots(result))
       .catch((err) => !cancelled && setError(err.message));
     return () => {
       cancelled = true;
     };
-  }, [id, date]);
+  }, [id, date, duration]);
 
   const handleBook = async () => {
     setError('');
     try {
-      setBooked(await bookingsApi.createBooking({ partnerId: id, date, start: selected }));
+      setBooked(await bookingsApi.createBooking({ partnerId: id, date, start: selected, duration }));
     } catch (err) {
       setError(err.message);
       setSelected('');
-      bookingsApi.getSlots(id, date).then(setSlots);
+      bookingsApi.getSlots(id, date, duration).then(setSlots);
     }
   };
 
@@ -78,25 +91,41 @@ function Book() {
             </p>
           </div>
         ) : (
-          <SlotCalendar date={date} onDateChange={setDate}>
-            {slots === null && <p className='scan-industry'>Loading...</p>}
-            {slots?.length === 0 && <p className='scan-industry'>No available time on this day</p>}
-            {slots?.length > 0 && (
-              <div className='slots'>
-                {slots.map((slot) => (
-                  <Btn key={slot} text={slot} className={slot === selected ? 'btn-green' : ''} onClick={() => setSelected(slot)} />
-                ))}
+          <>
+            {durations.length > 1 && (
+              <div className='profile-card booking-card'>
+                <h3>Appointment length</h3>
+                <OptionChips
+                  options={durations.map((item) => ({
+                    value: item,
+                    label: `${item} min`,
+                  }))}
+                  value={duration}
+                  onChange={setDuration}
+                />
               </div>
             )}
 
-            {error && <p className='scan-industry'>{error}</p>}
-            {!canBook && (
-              <p className='scan-industry'>
-                <Link to='/'>Log in</Link> as a customer to book an appointment
-              </p>
-            )}
-            <Btn text='Book' className='btn-green book-btn' disabled={!canBook || !selected} onClick={handleBook} />
-          </SlotCalendar>
+            <SlotCalendar date={date} onDateChange={setDate}>
+              {slots === null && <p className='scan-industry'>Loading...</p>}
+              {slots?.length === 0 && <p className='scan-industry'>No available time on this day</p>}
+              {slots?.length > 0 && (
+                <div className='slots'>
+                  {slots.map((slot) => (
+                    <Btn key={slot} text={slot} className={slot === selected ? 'btn-green' : ''} onClick={() => setSelected(slot)} />
+                  ))}
+                </div>
+              )}
+
+              {error && <p className='scan-industry'>{error}</p>}
+              {!canBook && (
+                <p className='scan-industry'>
+                  <Link to='/'>Log in</Link> as a customer to book an appointment
+                </p>
+              )}
+              <Btn text='Book' className='btn-green book-btn' disabled={!canBook || !selected} onClick={handleBook} />
+            </SlotCalendar>
+          </>
         )}
       </div>
     </div>

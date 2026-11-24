@@ -1,10 +1,8 @@
 import { ApiError } from './apiError';
-import { EMPTY_AVAILABILITY, getAvailableSlots, toMinutes, toTime } from '../utils/availability';
+import { EMPTY_AVAILABILITY, getAvailableSlots, toMinutes, toTime, SLOT_DURATION_OPTIONS, BREAK_OPTIONS } from '../utils/availability';
 
-// Мок "таблицы" записей в localStorage — сессия и юзеры общие с mockAuthApi
 const DB_KEY = 'mockDb_bookings';
 const USERS_KEY = 'mockDb_users';
-// Сессия в sessionStorage — у каждой вкладки своя (см. mockAuthApi)
 const SESSION_KEY = 'mockDb_session';
 const NETWORK_DELAY_MS = 400;
 
@@ -49,17 +47,17 @@ function getPartner(partnerId) {
   return partner;
 }
 
-async function getSlots(partnerId, date) {
+async function getSlots(partnerId, date, duration) {
   await delay(200);
 
   const partner = getPartner(partnerId);
   const availability = partner.availability ?? EMPTY_AVAILABILITY;
   const bookings = readBookings().filter((booking) => booking.partnerId === partnerId);
 
-  return getAvailableSlots(availability, bookings, date);
+  return getAvailableSlots(availability, bookings, date, duration);
 }
 
-async function createBooking({ partnerId, date, start, note = '' }) {
+async function createBooking({ partnerId, date, start, duration, note = '' }) {
   await delay();
 
   const customer = getSessionUser();
@@ -69,12 +67,20 @@ async function createBooking({ partnerId, date, start, note = '' }) {
 
   const partner = getPartner(partnerId);
   const availability = partner.availability ?? EMPTY_AVAILABILITY;
+  if (!(availability.slotDurations ?? [60]).includes(duration)) {
+    throw new ApiError('This appointment length is not offered', {
+      status: 400,
+      field: 'duration',
+    });
+  }
+
   const bookings = readBookings();
 
   const freeSlots = getAvailableSlots(
     availability,
     bookings.filter((booking) => booking.partnerId === partnerId),
     date,
+    duration,
   );
   if (!freeSlots.includes(start)) {
     throw new ApiError('This time slot is no longer available', { status: 409, field: 'start' });
@@ -87,7 +93,7 @@ async function createBooking({ partnerId, date, start, note = '' }) {
     customerName: `${customer.firstName ?? ''} ${customer.lastName ?? ''}`.trim() || customer.email,
     date,
     start,
-    end: toTime(toMinutes(start) + availability.slotMinutes),
+    end: toTime(toMinutes(start) + duration),
     note,
     status: 'confirmed',
     createdAt: new Date().toISOString(),
@@ -125,7 +131,7 @@ async function cancelBooking(id) {
   return bookings[index];
 }
 
-async function blockSlot({ date, start }) {
+async function blockRange({ date, from, to }) {
   await delay();
 
   const user = getSessionUser();
@@ -133,19 +139,23 @@ async function blockSlot({ date, start }) {
     throw new ApiError('Only partners can block slots', { status: 403 });
   }
 
+  if (toMinutes(from) >= toMinutes(to)) {
+    throw new ApiError('"From" must be earlier than "to"', { status: 400 });
+  }
+
   const availability = user.availability ?? EMPTY_AVAILABILITY;
-  const newSlot = { id: crypto.randomUUID(), date, start };
+  const newSlot = { id: crypto.randomUUID(), date, from, to };
 
   const updatedUser = {
     ...user,
-    availability: { ...availability, blockedSlots: [...(availability.blockedSlots ?? []), newSlot] },
+    availability: { ...availability, blockedRanges: [...(availability.blockedRanges ?? []), newSlot] },
   };
 
   writeUsers(readUsers().map((candidate) => (candidate.id === user.id ? updatedUser : candidate)));
   return newSlot;
 }
 
-async function unblockSlot(id) {
+async function unblockRange(id) {
   await delay();
 
   const user = getSessionUser();
@@ -154,14 +164,14 @@ async function unblockSlot(id) {
   }
 
   const availability = user.availability ?? EMPTY_AVAILABILITY;
-  const blockedSlots = availability.blockedSlots ?? [];
-  if (!blockedSlots.some((slot) => slot.id === id)) {
+  const blockedRanges = availability.blockedRanges ?? [];
+  if (!blockedRanges.some((slot) => slot.id === id)) {
     throw new ApiError('Blocked slot not found', { status: 404 });
   }
 
   const updatedUser = {
     ...user,
-    availability: { ...availability, blockedSlots: blockedSlots.filter((slot) => slot.id !== id) },
+    availability: { ...availability, blockedRanges: blockedRanges.filter((slot) => slot.id !== id) },
   };
 
   writeUsers(readUsers().map((candidate) => (candidate.id === user.id ? updatedUser : candidate)));
@@ -196,4 +206,55 @@ async function saveWeekly(weekly) {
   return updatedUser.availability;
 }
 
-export const mockBookingsApi = { getSlots, createBooking, getMyBookings, cancelBooking, blockSlot, unblockSlot, getMyAvailability, saveWeekly };
+async function saveSettings(settings) {
+  await delay();
+
+  const user = getSessionUser();
+  if (user.role !== 'partner') {
+    throw new ApiError('Only partners have availability', { status: 403 });
+  }
+
+  const availability = user.availability ?? EMPTY_AVAILABILITY;
+
+  if (settings.slotDurations) {
+    const isValid = settings.slotDurations.length > 0 && settings.slotDurations.every((item) => SLOT_DURATION_OPTIONS.includes(item));
+    if (!isValid) throw new ApiError('Choose at least one valid appointment length', { status: 400 });
+  }
+
+  if (settings.breakMinutes !== undefined && !BREAK_OPTIONS.includes(settings.breakMinutes)) {
+    throw new ApiError('Invalid break length', { status: 400 });
+  }
+
+  if (settings.fixedBreaks?.some((item) => toMinutes(item.from) >= toMinutes(item.to))) {
+    throw new ApiError('"From" must be earlier than "to"', { status: 400 });
+  }
+
+  const updatedUser = {
+    ...user,
+    availability: { ...availability, ...settings },
+  };
+
+  writeUsers(readUsers().map((candidate) => (candidate.id === user.id ? updatedUser : candidate)));
+
+  return updatedUser.availability;
+}
+
+async function getBookingOptions(partnerId) {
+  await delay(200);
+  const partner = getPartner(partnerId);
+  const availability = partner.availability ?? EMPTY_AVAILABILITY;
+  return { slotDurations: availability.slotDurations ?? [60] };
+}
+
+export const mockBookingsApi = {
+  getSlots,
+  createBooking,
+  getMyBookings,
+  cancelBooking,
+  blockRange,
+  unblockRange,
+  getMyAvailability,
+  saveWeekly,
+  getBookingOptions,
+  saveSettings,
+};

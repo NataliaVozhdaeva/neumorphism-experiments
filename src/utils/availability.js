@@ -11,10 +11,15 @@ export const EMPTY_AVAILABILITY = {
     sat: [],
     sun: [],
   },
-  slotMinutes: 60,
   blockedPeriods: [],
-  blockedSlots: [],
+  slotDurations: [60],
+  breakMinutes: 0,
+  blockedRanges: [],
+  fixedBreaks: [],
 };
+
+export const SLOT_DURATION_OPTIONS = [15, 30, 60];
+export const BREAK_OPTIONS = [0, ...SLOT_DURATION_OPTIONS];
 
 export const ACTIVE_BOOKING_STATUSES = ['pending', 'confirmed'];
 
@@ -37,18 +42,24 @@ export function isDateBlocked(availability, dateISO) {
   return availability.blockedPeriods.some((period) => dateISO >= period.from && dateISO <= period.to);
 }
 
-export function getAvailableSlots(availability, bookings, dateISO, now = new Date()) {
+export function getAvailableSlots(availability, bookings, dateISO, duration, now = new Date()) {
   if (isDateBlocked(availability, dateISO)) return [];
 
-  const { weekly, slotMinutes } = availability;
+  const { weekly, breakMinutes = 0 } = availability;
   const intervals = weekly[getWeekDay(dateISO)] ?? [];
 
   const busy = bookings
     .filter((booking) => booking.date === dateISO && ACTIVE_BOOKING_STATUSES.includes(booking.status))
-    .map((booking) => ({ start: toMinutes(booking.start), end: toMinutes(booking.end) }));
+    .map((booking) => ({ start: toMinutes(booking.start), end: toMinutes(booking.end) + breakMinutes }));
 
-  const blockedSlots = (availability.blockedSlots ?? []).filter((slot) => slot.date === dateISO).map((slot) => slot.start);
-
+  const blockedRanges = (availability.blockedRanges ?? [])
+    .filter((range) => range.date === dateISO)
+    .map((range) => ({ start: toMinutes(range.from), end: toMinutes(range.to) }));
+  const fixedBreaks = (availability.fixedBreaks ?? []).map((item) => ({
+    start: toMinutes(item.from),
+    end: toMinutes(item.to),
+  }));
+  const unavailable = [...blockedRanges, ...fixedBreaks];
   const todayISO = now.toLocaleDateString('en-CA');
   if (dateISO < todayISO) return [];
   const nowMinutes = dateISO === todayISO ? now.getHours() * 60 + now.getMinutes() : -1;
@@ -56,11 +67,12 @@ export function getAvailableSlots(availability, bookings, dateISO, now = new Dat
   const slots = [];
   for (const interval of intervals) {
     const intervalEnd = toMinutes(interval.to);
-    for (let start = toMinutes(interval.from); start + slotMinutes <= intervalEnd; start += slotMinutes) {
-      const end = start + slotMinutes;
+    for (let start = toMinutes(interval.from); start + duration <= intervalEnd; start += duration + breakMinutes) {
+      const end = start + duration;
       const isPast = start <= nowMinutes;
-      const isBusy = busy.some((booking) => start < booking.end && end > booking.start);
-      const isBlocked = blockedSlots.includes(toTime(start));
+      const endWithBreak = end + breakMinutes;
+      const isBusy = busy.some((booking) => start < booking.end && endWithBreak > booking.start);
+      const isBlocked = unavailable.some((range) => start < range.end && end > range.start);
 
       if (!isPast && !isBusy && !isBlocked) slots.push(toTime(start));
     }
